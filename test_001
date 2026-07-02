@@ -1,0 +1,68 @@
+import random
+
+player_name = input("playername: ")
+
+#begin stats
+player_hp = 100
+enemie_hp = 100
+
+# attacks
+def p_attack_normal (dmg):
+    global enemie_hp
+
+    enemie_hp = enemie_hp - dmg
+    
+    print (f"player has {player_hp} remaining ")
+    print (f"enemie has {enemie_hp} remaining ")
+
+def e_attack_normal (dmg):
+    global player_hp_hp
+
+    player_hp = player_hp_hp - dmg
+    print (f"player has {player_hp} remaining ")
+    print (f"enemie has {enemie_hp} remaining ")
+
+
+
+#options
+def player_turn ():
+    chosen_card = int(input("welke kaart wil je spelen?:"))
+    if chosen_card == 1:
+        p_attack_normal (80)
+    elif chosen_card == 2:
+        p_attack_normal (10)
+    elif chosen_card == 3:
+        p_attack_normal (0)
+
+
+
+
+def enemie_turn ():
+    card = random.randrange(1,3)
+    if card == 1:
+        e_attack_normal (12)
+    elif card == 2:
+        e_attack_normal (8)
+    elif card == 3:
+        e_attack_normal (15)
+
+
+    print ("")
+
+
+
+
+
+while enemie_hp >= 0 and player_hp >= 0:
+    player_turn ()
+    enemy_turn ()
+if enemie_hp < 0: #end stage??
+    print ("thou thouoght this was the end?")
+    print ()
+    print (HAHAHAHA)
+    print (f"{player_name}, you fool")
+    print()
+    print("...")
+
+elif player_hp < 0: #randomizer end messages
+    print (f"{player name} has been slayn")         
