@@ -6,25 +6,42 @@ player_name = input("playername: ")
 player_hp = 100
 enemie_hp = 100
 
+def show_stats ():
+    global enemie_hp
+    global player_hp
+    if enemie_hp >= 0 and player_hp >= 0:
+        print (f"player has {player_hp} remaining ")
+        print (f"enemie has {enemie_hp} remaining ")
+
+    elif enemie_hp < 0: #end stage??
+        print ("vamos, enemie has been slayn")
+
+    elif player_hp < 0: #randomizer end messages
+        print (f"{player_name} has been slayn")    
+
+def global_stats ():
+    global enemie_hp
+    global player_hp
 # attacks
 def p_attack_normal (dmg):
     global enemie_hp
 
     enemie_hp = enemie_hp - dmg
     
-    print (f"player has {player_hp} remaining ")
-    print (f"enemie has {enemie_hp} remaining ")
+    print (f"{player_name} has done {dmg} dmg. ")
+    show_stats ()
 
 def e_attack_normal (dmg):
-    global player_hp_hp
+    global player_hp
 
-    player_hp = player_hp_hp - dmg
-    print (f"player has {player_hp} remaining ")
-    print (f"enemie has {enemie_hp} remaining ")
+    player_hp = player_hp - dmg
+    print (f"the enemie has done {dmg} dmg. ") #later andere enemies hier invullen
+
+    show_stats ()
 
 
 
-#options
+    #options
 def player_turn ():
     chosen_card = int(input("welke kaart wil je spelen?:"))
     if chosen_card == 1:
@@ -38,31 +55,24 @@ def player_turn ():
 
 
 def enemie_turn ():
-    card = random.randrange(1,3)
-    if card == 1:
-        e_attack_normal (12)
-    elif card == 2:
-        e_attack_normal (8)
-    elif card == 3:
-        e_attack_normal (15)
 
+    # type_card = random.randint(1,n)
 
-    print ("")
+    ##e_dmg_normal = random.randint(3,16)
+    # if type_card == 1: (indend hierna later)
+    ##e_attack_normal (e_dmg_normal)
+    e_attack_normal (15)
 
 
 
+    
 
 
-while enemie_hp >= 0 and player_hp >= 0:
+
+show_stats()
+
+while enemie_hp > 0 and player_hp > 0:
+    global_stats ()
+
     player_turn ()
-    enemy_turn ()
-if enemie_hp < 0: #end stage??
-    print ("thou thouoght this was the end?")
-    print ()
-    print (HAHAHAHA)
-    print (f"{player_name}, you fool")
-    print()
-    print("...")
-
-elif player_hp < 0: #randomizer end messages
-    print (f"{player name} has been slayn")         
+    enemie_turn ()
