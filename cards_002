@@ -1,0 +1,71 @@
+import random
+def p_deck ():
+    shuffle_main()
+    p_len_deck = len(p_cards)
+    for i in range (0, p_len_deck):
+        print (f"{i+1}: {p_cards[i]}")
+    n = int(input("What card do you want to add?: "))
+
+def global_cards():
+    global p_cards
+    global p_extra_cards
+
+
+p_cards = ["fireball","slash","jump","play"]
+
+p_extra_cards = ["card_1","card_2","card_3","card_4",]
+
+def shuffle_main():
+    global_cards ()
+    random.shuffle(p_cards)
+
+def shuffle_extra():
+    global_cards ()
+    random.shuffle(p_extra_cards)
+
+    #print (f"{p_cards}")
+    #print (f"card 1: {p_cards[1]}")
+
+def p_card_add (p_card_amount_option, p_cards_amount_added):
+
+    shuffle_extra()
+    for k in range (0, p_cards_amount_added):
+        m = p_card_amount_option - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_extra_cards[i]}")
+        n = int(input("What card do you want to add?: "))
+
+        print (f"{p_extra_cards[n-1]} has been added")
+
+        
+        card_add = p_extra_cards[n-1]
+
+        p_cards.append(card_add)
+
+        p_extra_cards.remove(card_add)
+        p_extra_cards.append(card_add)
+
+
+
+def p_card_choose_max ():
+    p_extra_cards_amount_max = len(P_extra_cards)
+    for i in range (1,p_extra_cards_amount_max):
+        print (f"{i}: {p_extra_cards[i]}")
+
+
+
+p_card_add(4,2)
+
+p_deck ()
+
+print (p_cards)
+
+#p_new_card 
+
+#def add_card(p_new_card):
+
+    #p_cards.append(p_new_card)
+
+#add_card(p_new_card)
+
+#shuffle()
