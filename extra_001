@@ -1,0 +1,121 @@
+import random
+def p_deck ():
+    shuffle_main()
+    p_len_deck = len(p_cards)
+    for i in range (0, p_len_deck):
+        print (f"{i+1}: {p_cards[i]}")
+
+def p_hand ():
+    print ("lol") ################
+
+##def p_hand (amount): ##
+    ##shuffle_main
+
+def global_cards():
+    global p_cards
+    global p_extra_cards
+    global p_draw_pile
+    global p_exhaust_cards
+    global p_discard_cards
+
+
+
+p_cards = ["fireball","slash","jump","play","fireball","slash","jump","play","fireball","slash","jump","play"] #deck
+
+p_extra_cards = ["card_1","card_2","card_3","card_4","card_5","card_6","card_7","card_8"] #can draw
+
+p_draw_pile = [] 
+
+p_draw_pile = p_cards.copy() ###
+
+
+p_discard_cards = []
+
+p_exhaust_cards = []
+
+p_exhaust_not_returning_cards = []
+
+def shuffle_main():
+    global_cards ()
+    random.shuffle(p_cards)
+
+def shuffle_extra():
+    global_cards ()
+    random.shuffle(p_extra_cards)
+
+
+def start_draw(amount):
+    random.shuffle(p_draw_pile)
+    for i in range (0, amount):
+        print (f"{i+1}: {p_draw_pile[i]}")
+    
+
+
+    
+    
+
+
+
+def p_card_add (p_card_amount_option, p_cards_amount_added):
+
+    shuffle_extra()
+    for k in range (0, p_cards_amount_added):
+        m = p_card_amount_option - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_extra_cards[i]}")
+        n = int(input("What card do you want to add?: "))
+
+        print (f"{p_extra_cards[n-1]} has been added")
+
+        
+        card_add = p_extra_cards[n-1]
+
+        p_cards.append(card_add)
+
+        p_extra_cards.remove(card_add)
+        p_extra_cards.append(card_add)
+    p_deck()    
+
+
+
+def p_card_add_max (p_cards_amount_added):
+    shuffle_extra()
+    for k in range (0, p_cards_amount_added):
+        m = len(p_extra_cards) - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_extra_cards[i]}")
+
+        n = int(input("What card do you want to add?: "))
+        print (f"{p_extra_cards[n-1]} has been added")
+
+        
+        card_add = p_extra_cards[n-1]
+
+        p_cards.append(card_add)
+
+        p_extra_cards.remove(card_add)
+        p_extra_cards.append(card_add)
+
+
+def p_card_exhaust (p_cards_amount_exhaust):
+
+    shuffle_extra()
+    for k in range (0, p_cards_amount_exhaust):
+        m = len(p_cards) - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_cards[i]}")
+        n = int(input("What card do you want to exhaust?: "))
+
+        print (f"{p_cards[n-1]} has been removed")
+
+        
+        card_exhaust = p_cards[n-1]
+
+        p_cards.remove(card_exhaust)
+
+        p_exhaust_cards.append(card_exhaust)
+
+       
+
+
+start_draw (5)
