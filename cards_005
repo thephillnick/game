@@ -1,0 +1,190 @@
+import random
+def p_deck ():
+    shuffle_main()
+    p_len_deck = len(p_cards)
+    for i in range (0, p_len_deck):
+        print (f"{i+1}: {p_cards[i]}")
+
+
+##def p_hand (amount): ##
+    ##shuffle_main
+
+
+
+p_cards = ["fireball","slash","jump","play","fireball","slash","jump","play","fireball","slash","jump","play"] #deck
+
+p_extra_cards = ["card_1","card_2","card_3","card_4","card_5","card_6","card_7","card_8"] #can draw
+
+p_draw_pile = [] 
+
+p_draw_pile = p_cards.copy() ###
+
+p_hand_pile = []
+
+p_discard_cards = []
+
+p_exhaust_cards = []
+
+p_exhaust_not_returning_cards = []
+
+def updated_hand ():
+    n = len(p_hand_pile)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_hand_pile[i]}")
+
+def shuffle_main():
+    random.shuffle(p_cards)
+
+def shuffle_extra():
+    random.shuffle(p_extra_cards)
+
+
+def draw(amount):
+    random.shuffle(p_draw_pile)
+    for i in range (0, amount):
+        print (f"{i+1}: {p_draw_pile[i]}")
+        p_hand_pile.append(p_draw_pile[i])
+        p_draw_pile.remove(p_draw_pile[i])
+
+    
+
+
+def p_card_add (p_card_amount_option, p_cards_amount_added):
+
+    shuffle_extra()
+    for k in range (0, p_cards_amount_added):
+        m = p_card_amount_option - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_extra_cards[i]}")
+        n = int(input("What card do you want to add?: "))
+
+        print (f"{p_extra_cards[n-1]} has been added")
+
+        
+        card_add = p_extra_cards[n-1]
+
+        p_cards.append(card_add)
+        p_draw_pile.append(card_add)
+
+        p_extra_cards.remove(card_add)
+        p_extra_cards.append(card_add)
+    p_deck()    
+
+
+
+def p_card_add_max (p_cards_amount_added):
+    shuffle_extra()
+    for k in range (0, p_cards_amount_added):
+        m = len(p_extra_cards) - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_extra_cards[i]}")
+
+        n = int(input("What card do you want to add?: "))
+        print (f"{p_extra_cards[n-1]} has been added")
+
+        
+        card_add = p_extra_cards[n-1]
+
+        p_cards.append(card_add)
+
+        p_extra_cards.remove(card_add)
+        p_extra_cards.append(card_add)
+
+
+def p_card_exhaust (p_cards_amount_exhaust):
+
+    shuffle_extra()
+    for k in range (0, p_cards_amount_exhaust):
+        m = len(p_cards) - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_cards[i]}")
+        n = int(input("What card do you want to exhaust?: "))
+
+        print (f"{p_cards[n-1]} has been removed")
+
+        
+        card_exhaust = p_cards[n-1]
+
+        p_cards.remove(card_exhaust)
+
+        p_exhaust_cards.append(card_exhaust)
+
+
+def player_turn():
+    draw(5)
+    while True:
+        played_card = int(input("what card do you want to play?: "))
+        if played_card == 1:
+
+            p_hand_pile.remove(p_hand_pile[0])
+            updated_hand ()
+            
+
+
+        elif played_card == 2:
+            p_hand_pile.remove(p_hand_pile[1])
+            updated_hand ()
+        
+        elif played_card == 3:
+            p_hand_pile.remove(p_hand_pile[2])
+            updated_hand ()
+
+        elif played_card == 4:
+            p_hand_pile.remove(p_hand_pile[3])
+            updated_hand ()
+
+        elif played_card == 5:
+            p_hand_pile.remove(p_hand_pile[4])
+            updated_hand ()
+
+        elif played_card == 6:
+            p_hand_pile.remove(p_hand_pile[5])
+            updated_hand ()
+
+        elif played_card == 7:
+            p_hand_pile.remove(p_hand_pile[6])
+            updated_hand ()
+
+        elif played_card == 8:
+            p_hand_pile.remove(p_hand_pile[7])
+            updated_hand ()
+
+        elif played_card == 9:
+            p_hand_pile.remove(p_hand_pile[8])
+            updated_hand ()
+
+        elif played_card == 10:
+            p_hand_pile.remove(p_hand_pile[9])
+            updated_hand ()
+
+        elif played_card == 11:
+            p_hand_pile.remove(p_hand_pile[10])
+            updated_hand ()
+
+        elif played_card == 12:
+            p_hand_pile.remove(p_hand_pile[11])
+            updated_hand ()
+        
+        else:
+            break
+
+
+
+    
+
+
+round = 2       
+
+
+
+#----------------cards--------------------
+card_functions = {"fireball":fireball,"slash":slash}
+def fireball():
+    print ("fireball")
+
+def slash():
+    print ("slash")
+
+
+
+player_turn ()
