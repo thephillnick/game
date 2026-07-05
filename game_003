@@ -1,0 +1,274 @@
+import random
+def p_deck ():
+    shuffle_main()
+    p_len_deck = len(p_cards)
+    for i in range (0, p_len_deck):
+        print (f"{i+1}: {p_cards[i]}")
+
+#-------------stats--------------
+r = 1 #difficulty
+player = {"hp":80/r,
+          "extra_start_draw": 0}
+player_name = "the phillnick"
+extra_start_draw = 0
+round = 1
+enemie_number = random.randint(1,2)
+
+
+#-------------piles--------------
+p_cards = ["fireball","slash","slash","jump","play","fireball","slash","jump","play","slash","slash","slash","slash","slash","slash"] #deck
+
+p_extra_cards = ["spring","kill","kopen"] #can draw
+
+p_draw_pile = [] 
+
+p_draw_pile = p_cards.copy() 
+
+p_hand_pile = []
+
+p_discard_cards = []
+
+p_exhaust_cards = []
+
+p_exhaust_not_returning_cards = []
+#-----------------------------------------------
+
+def updated_hand ():
+    n = len(p_hand_pile)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_hand_pile[i]}")
+
+def shuffle_main():
+    random.shuffle(p_cards)
+
+def shuffle_extra():
+    random.shuffle(p_extra_cards)
+
+def draw(amount):
+    random.shuffle(p_draw_pile)
+    random.shuffle(p_discard_cards)
+    if len(p_draw_pile) >= amount:
+        for i in range (0, amount):
+            print (f"{i+1}: {p_draw_pile[0]}")
+            p_hand_pile.append(p_draw_pile[0])
+            p_draw_pile.remove(p_draw_pile[0])
+    else:
+        for i in range (0, len(p_draw_pile)):
+            print (f"{i+1}: {p_draw_pile[0]}")
+            p_hand_pile.append(p_draw_pile[0])
+            p_draw_pile.remove(p_draw_pile[0])
+
+
+
+def extra_draw(amount):
+    random.shuffle(p_draw_pile)
+    random.shuffle(p_discard_cards)
+    for i in range (amount):
+        if len(p_draw_pile) >= 1:
+            p_hand_pile.append(p_draw_pile[0])
+            p_draw_pile.remove(p_draw_pile[0])
+
+        elif len(p_draw_pile) == 0:
+            for i in range (0,len(p_discard_cards)):
+                p_draw_pile.append(p_discard_cards[0])
+                p_discard_cards.remove(p_discard_cards[0])
+            p_hand_pile.append(p_draw_pile[0])
+            p_draw_pile.remove(p_draw_pile[0])
+ 
+
+def p_card_add (p_card_amount_option, p_cards_amount_added): #after the game
+
+    shuffle_extra()
+    for k in range (0, p_cards_amount_added):
+        m = p_card_amount_option - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_extra_cards[i]}")
+        n = int(input("What card do you want to add?: "))
+
+        print (f"{p_extra_cards[n-1]} has been added")
+
+        
+        card_add = p_extra_cards[n-1]
+
+        p_cards.append(card_add)
+        p_draw_pile.append(card_add)
+
+        p_extra_cards.remove(card_add)
+        p_extra_cards.append(card_add)
+    print ("---------------deck----------------") 
+    p_deck()  
+
+def p_card_add_max (amount):
+    shuffle_extra()
+    for k in range (0, amount):
+        m = len(p_extra_cards) - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_extra_cards[i]}")
+
+        n = int(input("What card do you want to add?: "))
+        print (f"{p_extra_cards[n-1]} has been added")
+
+        
+        card_add = p_extra_cards[n-1]
+
+        p_cards.append(card_add)
+
+        p_extra_cards.remove(card_add)
+        p_extra_cards.append(card_add)
+
+def p_card_exhaust (amount):
+
+    for k in range (0, amount):
+        #m = len(p_cards) - k
+        #for i in range (0,m):
+        #    print (f"{i+1}: {p_cards[i]}")
+        updated_hand()
+
+        n = int(input("What card do you want to exhaust?: "))
+
+        print (f"{p_hand_pile[n-1]} has been exhausted")
+
+        
+        card_exhaust = p_hand_pile[n-1]
+
+        p_hand_pile.remove(card_exhaust)
+        
+        p_exhaust_cards.append(card_exhaust)
+
+
+
+def player_turn():
+    draw(5 + extra_start_draw)
+
+    while True:
+
+        played_card = int(input("Which card do you want to play? (0 to stop): "))
+
+        if played_card == 0:
+            break
+        
+        played_card_card = played_card - 1
+        card = p_hand_pile.pop(played_card_card)
+
+        card_functions[card]()
+        p_discard_cards.append(card)
+
+        updated_hand()
+
+
+
+
+
+
+#----------------cards--------------------
+def fireball():
+    print ("fireball")
+    p_card_exhaust(2)
+
+def slash():
+    print ("slash")
+    extra_draw (3)
+
+def jump():
+    print ("jump")
+    p_card_add_max (1)
+
+def play():
+    print ("paly")
+    print (p_exhaust_cards)
+
+def spring():
+    print ("spring")
+    print (p_draw_pile)
+
+def kill():
+    print ("kill")
+    print (p_discard_cards)
+
+def kopen():
+    print ("kopen")
+    print (p_extra_cards)
+
+card_functions = {"fireball": fireball,"slash":slash,"jump":jump,"play":play,"spring":spring,"kill":kill,"kopen":kopen}
+
+
+p_cards = ["fireball","slash","jump","play","fireball","slash","jump","play"] #deck
+
+p_extra_cards = ["spring","kill","kopen"] #can draw
+#-----------------enemie_cards---------------
+def normal_attack_1 (dmg,round):
+    player["hp"] = player["hp"] - dmg + round * r
+    
+
+def normal_attack_2 (dmg,round):
+    print (dmg)
+    print ("yo")
+    print (round)
+
+def normal_attack_3 (dmg,round):
+    print (dmg)
+    print ("yo")
+    print (round)
+
+def normal_attack_4 (dmg,round):
+    print (dmg)
+    print ("yo")
+    print (round)
+#-----------------enemies-------------------
+def gerald_the_vast(round):
+    return {"enemie_name":"gerald the vast",
+            "enemie_hp": 40 + round * 4 * r,
+            1: (normal_attack_1, 12),
+            2: (normal_attack_2, 15)}
+
+
+def gerald_the_least (round):
+    return {"enemie_name":"gerald the least",
+            "enemie_hp": 30 + round * 3 * r,
+            1: (normal_attack_3, 1) ,
+            2: (normal_attack_4, 2)}
+
+enemie_functions = {1:gerald_the_vast,2:gerald_the_least}
+
+enemie = enemie_functions [enemie_number](round)
+
+
+    
+def show_stats ():
+    enemie = enemie_functions [enemie_number](round)
+    print (f"{player_name}: {player["hp"]}")
+    print (f"{enemie['enemie_name']}: {enemie["enemie_hp"]}")
+
+
+def enemie_turn (round):
+    card = random.randint(1, 2)
+
+    attack_function, dmg = enemie[card]
+
+    print (attack_function)
+
+    attack_function(dmg, round)
+
+
+        
+
+
+
+
+if round < 10:
+    enemie = enemie_functions [enemie_number](round)
+    print (f"round {round}")
+    print (f"figthing {enemie["enemie_name"]}")
+    print ("----------------------------------}")
+    while enemie["enemie_hp"] > 0 and player["hp"] > 0:
+        show_stats()
+        player_turn()
+        if enemie["enemie_hp"] <= 0:
+            break
+        enemie_turn(round)
+        if player["hp"] <= 0:
+            break
+    
+
+    round = round + 1
+    enemie_number = random.randint(1,2)
