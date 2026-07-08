@@ -1,0 +1,350 @@
+import random
+
+
+#-------------stats--------------
+r = 1 #difficulty
+p_max_hp = 80/r
+player = {"hp":80/r,
+          "extra_start_draw": 0,
+          "strength": 0,
+          "total_energy": 3,
+          "energy": 3,
+          "extre_start_draw": 0,
+          "roundje": 1}
+player_name = "the phillnick"
+
+enemie_number = random.randint(1,2)
+e_card_types = ("attack","block","status")
+
+
+
+
+
+#-------------piles--------------
+p_cards = ["strike","strike","strike","strike","strike","strike","strike","strike","strike","strike","strike","strike","strike","strike","strike","fireball","slash","slash","jump","play","fireball","slash","jump","play","slash","slash","slash","slash","slash","slash"] #deck
+
+p_extra_cards = ["spring","kill","kopen"] #can draw
+
+p_draw_pile = [] 
+
+p_draw_pile = p_cards.copy() 
+
+p_hand_pile = []
+
+p_discard_cards = []
+
+p_exhaust_cards = []
+
+p_exhaust_not_returning_cards = []
+#-----------------------------------------------
+
+def updated_hand ():
+    print (f"energy: {player["energy"]}/{player["total_energy"]}")
+    n = len(p_hand_pile)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_hand_pile[i]}")
+
+def shuffle_main():
+    random.shuffle(p_cards)
+
+def shuffle_extra():
+    random.shuffle(p_extra_cards)
+
+def draw(amount):
+    random.shuffle(p_draw_pile)
+    random.shuffle(p_discard_cards)
+    if len(p_draw_pile) >= amount:
+        for i in range (0, amount):
+            print (f"{i+1}: {p_draw_pile[0]}")
+            p_hand_pile.append(p_draw_pile[0])
+            p_draw_pile.remove(p_draw_pile[0])
+    else:
+        for i in range (0, len(p_draw_pile)):
+            print (f"{i+1}: {p_draw_pile[0]}")
+            p_hand_pile.append(p_draw_pile[0])
+            p_draw_pile.remove(p_draw_pile[0])
+
+def p_deck ():
+    shuffle_main()
+    p_len_deck = len(p_cards)
+    for i in range (0, p_len_deck):
+        print (f"{i+1}: {p_cards[i]}")
+
+def extra_draw(amount):
+    random.shuffle(p_draw_pile)
+    random.shuffle(p_discard_cards)
+    for i in range (amount):
+        if len(p_draw_pile) >= 1:
+            p_hand_pile.append(p_draw_pile[0])
+            p_draw_pile.remove(p_draw_pile[0])
+
+        elif len(p_draw_pile) == 0:
+            for i in range (0,len(p_discard_cards)):
+                p_draw_pile.append(p_discard_cards[0])
+                p_discard_cards.remove(p_discard_cards[0])
+            p_hand_pile.append(p_draw_pile[0])
+            p_draw_pile.remove(p_draw_pile[0])
+ 
+
+def p_card_add (p_card_amount_option, p_cards_amount_added): #after the game
+
+    shuffle_extra()
+    for k in range (0, p_cards_amount_added):
+        m = p_card_amount_option - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_extra_cards[i]}")
+        n = int(input("What card do you want to add?: "))
+
+        print (f"{p_extra_cards[n-1]} has been added")
+
+        
+        card_add = p_extra_cards[n-1]
+
+        p_cards.append(card_add)
+        p_draw_pile.append(card_add)
+
+        p_extra_cards.remove(card_add)
+        p_extra_cards.append(card_add)
+    print ("---------------deck----------------") 
+    p_deck()  
+
+def p_card_add_max (amount):
+    shuffle_extra()
+    for k in range (0, amount):
+        m = len(p_extra_cards) - k
+        for i in range (0,m):
+            print (f"{i+1}: {p_extra_cards[i]}")
+
+        n = int(input("What card do you want to add?: "))
+        print (f"{p_extra_cards[n-1]} has been added")
+
+        
+        card_add = p_extra_cards[n-1]
+
+        p_cards.append(card_add)
+
+        p_extra_cards.remove(card_add)
+        p_extra_cards.append(card_add)
+
+def p_card_exhaust (amount):
+
+    for k in range (0, amount):
+        #m = len(p_cards) - k
+        #for i in range (0,m):
+        #    print (f"{i+1}: {p_cards[i]}")
+        updated_hand()
+
+        n = int(input("What card do you want to exhaust?: "))
+
+        print (f"{p_hand_pile[n-1]} has been exhausted")
+
+        
+        card_exhaust = p_hand_pile[n-1]
+
+        p_hand_pile.remove(card_exhaust)
+        
+        p_exhaust_cards.append(card_exhaust)
+
+#-------------piles------------
+def discard_pile_show():
+    n = len(p_discard_cards)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_discard_cards[i]}")
+
+def exhaust_pile_show():
+    n = len(p_exhaust_cards)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_exhaust_cards[i]}")
+
+def draw_pile_show():
+    n = len(p_draw_pile)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_draw_pile[i]}")
+
+
+def player_turn():
+    print (f"energy: {player["energy"]}/{player["total_energy"]}")
+    draw(5 + player["extra_start_draw"])
+    player["energy"] = player["total_energy"]
+    while True:
+        played_card = (input("Which card do you want to play? (0 to stop): "))
+        if played_card == "discard":
+            discard_pile_show()
+        elif played_card == "exhaust":
+            exhaust_pile_show()
+        elif played_card == "draw":
+            draw_pile_show()
+
+        else:
+            played_card_2 = int(played_card)
+            if played_card_2 == 0:
+                break
+            
+            played_card_card = played_card_2 - 1
+            
+            card = p_hand_pile[played_card_card]
+
+            played_card_function, energy_cost = card_functions[card]
+            if energy_cost > player["energy"]:
+                print ("insuficient energy")
+            else:
+                played_card_function()
+                p_hand_pile.remove(card)
+                p_discard_cards.append(card)
+
+            show_stats()
+            updated_hand()
+            print ("--------------------------------------")
+    p_discard_cards.extend(p_hand_pile)
+    p_hand_pile.clear()
+
+        
+
+
+#----------------card_effects--------------
+def p_normal_attack(dmg):
+    total_dmg = (dmg + player["strength"]) 
+    enemie["enemie_hp"] = enemie["enemie_hp"] - total_dmg
+    print (f"{player_name} has done {total_dmg} damage")
+
+def P_normal_multi_attack(dmg,amount):
+    total_dmg = (dmg + player["strength"]) * amount
+    enemie["enemie_hp"] = enemie["enemie_hp"] - total_dmg
+    print (f"{player_name} has done {dmg + player["strength"]} damage {amount} times")
+
+
+
+#----------------cards--------------------
+def strike():
+    if player["energy"] >= 1:
+        p_normal_attack (6)
+        player["energy"] = player["energy"] - 1
+
+    
+
+def block():
+    print ("yp")
+
+def fireball():
+    print ("fireball")
+
+def slash():
+    print ("slash")
+    extra_draw (3)
+
+def jump():
+    print ("jump")
+    p_card_add_max (1)
+
+def play():
+    print ("paly")
+    print (p_exhaust_cards)
+
+def spring():
+    print ("spring")
+    print (p_draw_pile)
+
+def kill():
+    print ("kill")
+    print (p_discard_cards)
+
+def kopen():
+    print ("kopen")
+    print (p_extra_cards)
+
+card_functions = {"strike": (strike, 1),"fireball": (fireball, 0),"slash": (slash,0) ,"jump":(jump,0),"play":(play,0),"spring":(spring,0),"kill":(kill,0),"kopen":(kopen,0)}
+
+
+p_cards = ["fireball","slash","jump","play","fireball","slash","jump","play"] #deck
+
+p_extra_cards = ["spring","kill","kopen"] #can draw
+
+#-----------------test----------------------
+
+#-----------------enemie_cards---------------
+def normal_attack (dmg, amount, roundje):
+    player["hp"] = round(player["hp"] - dmg + roundje * r * amount)
+    print (f"{enemie['enemie_name']} dealt {dmg + roundje * r}")
+
+def normal_multi_attack (dmg, amount, roundje):
+    for i in range (1,amount):
+        player["hp"] = round(player["hp"] - dmg + roundje * r / 5)
+    print (f"{enemie['enemie_name']} dealt {dmg} dmg {amount} times.")
+
+def normal_block (block ,roundje): 
+    enemie["start_block"] = round(enemie["start_block"] + block + roundje * r)
+    print (f"{enemie['enemie_name']} blocks {enemie['start_block']}")
+
+def normal_attack_4 (dmg,roundje):
+    print (dmg)
+    print ("yo")
+    print (roundje)
+#-----------------enemies-------------------
+def gerald_the_vast(roundje):
+    return {"enemie_name":"gerald the vast",
+            "enemie_hp": 40 + roundje * 4 * r,
+            "start_block": 0,
+            "card_types": random.choices(e_card_types, weights=[80,20,0])[0],
+            "attack": {1: (normal_attack, 12, 1),
+                       2: (normal_multi_attack, 6, 3)},
+            "block": {1: (normal_block, 12),
+                      2: (normal_block, 20)}}
+
+
+def gerald_the_least (roundje):
+    return {"enemie_name":"gerald the least",
+            "enemie_hp": 30 + roundje * 3 * r,
+            "start_block": 0,
+            "card_types": random.choices(e_card_types, weights=[100,0,0])[0],
+            "attack":{ 1: (normal_multi_attack, 5, 2),
+                      2: (normal_attack, 22, 1)}}
+           
+
+enemie_functions = {1:gerald_the_vast, 2:gerald_the_least}
+
+def show_stats ():
+    print (f"{player_name}: {player["hp"]}")
+    print (f"{enemie['enemie_name']}: {enemie['enemie_hp']}")
+
+
+def enemie_turn (roundje):
+    card = random.randint(1, 2)
+    if enemie['card_types'] == "attack":
+        attack_function, dmg, amount = enemie["attack"][card]
+        attack_function(dmg, amount, roundje)
+
+    elif enemie["card_types"] == "block":
+        block_function, block = enemie["block"][card]
+        block_function(block, roundje)
+    else:
+        print ("need to add new type")
+        
+
+
+    
+
+#player_turn ()
+
+#enemie_turn(player["roundje"])
+
+
+if player["roundje"] < 10:
+    enemie = enemie_functions [enemie_number](player["roundje"])
+    print (f"round: {player["roundje"]}")
+    print (f"figthing {enemie["enemie_name"]}")
+    print ("----------------------------------}")
+    while enemie["enemie_hp"] > 0 and player["hp"] > 0:
+        show_stats()
+        player_turn()
+        if enemie["enemie_hp"] <= 0:
+            print (f"{enemie["enemie_name"]} has been defeated")
+        enemie_turn(player["roundje"])
+        player["energy"] = player["total_energy"]
+
+        if player["hp"] <= 0:
+            print (f"{player_name} has been defeated by {enemie['enemie_name']}")
+            break
+    
+
+    player["roundje"] = player["roundje"] + 1
+    enemie_number = random.randint(1,2)
