@@ -1,0 +1,30 @@
+def potion_add (amount, choices):
+    for k in range (amount):
+        left_choices = choices - k
+        for i in range (left_choices):
+            rarity = random.choices(["common","rare","very_rare"], weights=[80,20,0][0]
+            if rarity == "common":
+                pot = random.choice(potions_common)
+            elif rarity == "rare":
+                pot = random.choice(potions_rare)
+            elif rarity == "very_rare":
+                pot = random.choice(potions_very_rare)
+            print (f"{i+1}: {pot}")
+            potion_choice_pile.append(pot)
+            
+        n = int(input("What potion do you want to add (0 for skip)"))
+
+        if player["potion_slots"] > len(potion_pile):
+            print (f"added {potion_choice_pile [n-1]}")
+            potion_pile.append(potion_choice_pile [n-1])
+        
+        else:
+            print (f"added {potion_choice_pile [n-1]}")
+            potion_pile_show()
+            m = int(input("which potion do you want to replace"))
+            print (f"removed {potion_pile[m-1]} ")
+            potion_pile.append(potion_choice_pile [n-1])
+            potion_pile.remove(potion_pile[m-1])
+
+        potion_choice_pile.clear()
+    potion_pile_show()
