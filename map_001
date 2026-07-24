@@ -1,0 +1,20 @@
+import random
+def map_create():
+    n = 4 #amount of combats per row 
+    m = 2 #amount floors (per act)
+    map = []
+    node_types = random.choices(["combat","shop","elite","event","empty"], weights=[50,5,10,20,40], k = 50)
+    for i in range (m):
+        map.append([])
+
+        for j in range (n):
+            next = random.randint(0,4)
+            node = {"id": j, 
+                    "x": 10 + 5 * j, 
+                    "y": 10 + 10 * i,
+                    "type": node_types[j + n * i],
+                    "next": []}
+            map[i].append(node)
+
+def map_show():
+    map_create()
