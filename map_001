@@ -1,20 +1,31 @@
 import random
-def map_create():
-    n = 4 #amount of combats per row 
-    m = 2 #amount floors (per act)
-    map = []
-    node_types = random.choices(["combat","shop","elite","event","empty"], weights=[50,5,10,20,40], k = 50)
-    for i in range (m):
-        map.append([])
 
-        for j in range (n):
-            next = random.randint(0,4)
-            node = {"id": j, 
-                    "x": 10 + 5 * j, 
-                    "y": 10 + 10 * i,
-                    "type": node_types[j + n * i],
-                    "next": []}
-            map[i].append(node)
+n = 3 #amount of combats per row 
+m = 10 #amount floors (per act)
+map = []
+node_types = random.choices(["combat","shop","elite","event","empty"], weights=[50,5,10,20,40], k = 50)
+for i in range (m):
+    map.append([])
 
-def map_show():
-    map_create()
+    for j in range (n):
+        next = random.randint(0,4)
+        node = {"floor": i,
+                "id": j, 
+                "x": 10 + 5 * j, 
+                "y": 10 + 10 * i,
+                "type": node_types[j + n * i],
+                "next": []}
+        map[i].append(node)
+
+def combat():
+    print(f"combat in progress on floor {map[i][j]["floor"]}" )
+# for engagin battle, ask where to go (what i and j that has), -> if possible -> def combat/shop/etc
+
+for i in range (m):
+    for j in range (n):
+        if map[i][j]["type"] == "combat":
+            combat()
+        if map[i][j]["type"] == "event":
+            event()
+        if map[i][j]["type"] == "elite":
+            elite()
