@@ -1,0 +1,47 @@
+r = 1
+def gremlin(roundje): #wss boss later
+    sequence = ["attack","attack","debuff"]
+    return {"enemie_name":"gremlin leader",
+            "type": "boss",
+            "max_hp": 356 + roundje * 5 * r,
+            "enemie_hp": 356 + roundje * 5 * r,}
+
+def angsty_gremlin_minion(roundje):
+    return {"enemie_name":"angsty gremlin",
+            "type": "boss",
+            "max_hp": 55 + roundje * 3 * r,
+            "enemie_hp": 55 + roundje * 3 * r,}
+
+def thiefing_gremlin_minion(roundje):
+    return {"enemie_name":"thiefing gremlin",
+            "type": "minion",
+            "max_hp": 55 + roundje * 3 * r,
+            "enemie_hp": 55 + roundje * 3 * r,}
+
+def other_gremlin_minion(roundje):
+    return {"enemie_name":"angsty gremlin",
+            "type": "minion",
+            "max_hp": 55 + roundje * 3 * r,
+            "enemie_hp": 55 + roundje * 3 * r,}
+
+def fourth_gremlin_minion(roundje):
+    return {"enemie_name":"angsty gremlin",
+            "type": "minion",
+            "max_hp": 55 + roundje * 3 * r,
+            "enemie_hp": 55 + roundje * 3 * r,}
+
+gremlin_minion_functions = {1: angsty_gremlin_minion, 2: thiefing_gremlin_minion, 3:other_gremlin_minion, 4: fourth_gremlin_minion }
+
+
+minions = []
+minions.append(gremlin_minion_functions[1](2))
+minions.append(gremlin_minion_functions[2](2))
+minions.append(gremlin_minion_functions[3](2))
+minions.append(gremlin_minion_functions[4](2))
+
+
+
+print (minions[0])
+print (minions[1])
+print (minions[2])
+print (minions[3])
