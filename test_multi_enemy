@@ -1,0 +1,79 @@
+r = 1
+import random
+def company(roundje):
+    return {"enemie_amount": 3,
+            0: {"enemie_name":"gerald the vast",
+                    "type": "normal",
+                    "max_hp": 40 + roundje * 4 * r,
+                    "enemie_hp": 40 + roundje * 4 * r,
+                    "strength": 0,},
+            1: {"enemie_name":"gerald",
+                    "type": "normal",
+                    "max_hp": 40 + roundje * 4 * r,
+                    "enemie_hp": 40 + roundje * 4 * r,
+                    "strength": 0,},
+            2: {"enemie_name":"gerald",
+                    "type": "normal",
+                    "max_hp": 40 + roundje * 4 * r,
+                    "enemie_hp": 40 + roundje * 4 * r,
+                    "strength": 0,}}
+
+enemie_functions = {1: company}
+
+while 8 < 10:
+    ask = input("what type of event? ")
+    enemie_number = random.randint(1,1)
+    enemie = enemie_functions [enemie_number](8)
+    if enemie["enemie_amount"] == 1:
+        print("the usual")
+    else:
+        for i in range (enemie["enemie_amount"]):
+            print (enemie[i]["enemie_name"])
+
+
+
+
+
+
+
+
+
+def enemie_turn_preview (roundje):
+    if enemie['card_types'] == "attack":
+        attack_function, dmg, amount = enemie["attack"][stored["card"]]
+        attack_function (dmg, amount, roundje, "yes")
+
+    elif enemie["card_types"] == "block":
+        print (f"{enemie["enemie_name"]} is blocking next turn")
+
+    elif enemie["card_types"] == "debuff":
+        print (f"{enemie["enemie_name"]} is debuffing next turn")
+
+    if not enemie["special"] == 0:
+        print (f"{enemie["enemie_name"]} is buffing next turn")
+
+def enemie_turn (roundje):
+    if enemie['card_types'] == "attack":
+        attack_function, dmg, amount = enemie["attack"][stored["card"]]
+        attack_function(dmg, amount, roundje, "no")
+
+    elif enemie["card_types"] == "block":
+        block_function, block = enemie["block"][stored["card"]]
+        block_function(block, roundje)
+
+    elif enemie["card_types"] == "debuff":
+        debuff_function, amount = enemie["debuff"][stored["card"]]
+        debuff_function(amount)
+
+    if not enemie["special"] == 0:
+        special_function, x = enemie["special"]
+        special_function (x)
+    else:
+        print ("need to add new type")
+    
+    if enemie["frail"] > 0:
+        enemie["frail"] -= 1
+    if enemie["vulnerable"] > 0:
+        enemie["vulnerable"] -= 1
+    if enemie["weak"] > 0:
+        enemie["weak"] -= 1
