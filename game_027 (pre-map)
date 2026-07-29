@@ -1,14 +1,7 @@
 import random
 import os
 import time
-def test():
-    print(
-        len(p_cards),
-        len(p_draw_pile),
-        len(p_hand_pile),
-        len(p_discard_cards),
-        len(p_exhaust_cards)
-    )
+
 #-------------stats--------------
 r = 1 #difficulty
 hp = round(80/r)
@@ -60,7 +53,6 @@ def updated_hand ():
     for i in range (0, n ):
         card, energy, target = card_functions[p_hand_pile[i]]
         print (f"{i+1}: {p_hand_pile[i]} ({energy})")
-    test()
 
 def start_draw():
     amount = 5 + player["extra_draw"] + player["extra_start_draw"]
@@ -73,7 +65,6 @@ def start_draw():
             add = p_draw_pile.pop(0)
             p_hand_pile.append(add)
     updated_hand()
-    test()
 
 def draw(amount):
     n = len(p_draw_pile)
@@ -91,7 +82,6 @@ def draw(amount):
             add = p_draw_pile.pop(0)
             p_hand_pile.append(add)   
     updated_hand()
-    test()
 
 def p_deck ():
     p_len_deck = len(p_cards)
@@ -128,7 +118,6 @@ def p_card_add (p_card_amount_option, p_cards_amount_added, c, r, v):
         card_add = p_extra[n-1]
 
         p_cards.append(card_add)
-        test()
 
     print ("---------------deck----------------") 
     p_deck()  
@@ -1730,8 +1719,6 @@ def normal_battle():
     p_discard_cards.clear()
     p_exhaust_cards.clear()
     p_draw_pile.extend(p_cards)    
-    print("test")
-    test()
     player["turn"] = 1
     relic_use_combat()
     random.shuffle(p_draw_pile)
