@@ -1,0 +1,91 @@
+import pygame
+
+pygame.init()
+screen = pygame.display.set_mode((800,400))
+clock = pygame.time.Clock()
+pygame.display.set_caption("game")
+running = True
+test_font = pygame.font.Font(None, 50)
+score_font = pygame.font.Font(None, 20)
+
+
+player_x = 80
+score = 0
+
+sky_surface = pygame.image.load('C:/Users/loicw/pygame_test/sky.png').convert()
+ground_surface = pygame.image.load('C:/Users/loicw/pygame_test/ground.png').convert()
+snail1 = pygame.image.load('C:/Users/loicw/pygame_test/snail1.png').convert_alpha()
+snail2 = pygame.image.load('C:/Users/loicw/pygame_test/snail2.png').convert_alpha()
+snail_rect = snail1.get_rect(bottomleft = (0, 300))
+player_surface1 = pygame.image.load('C:/Users/loicw/pygame_test/player_walk_1.png').convert_alpha()
+player_surface2 = pygame.image.load('C:/Users/loicw/pygame_test/player_walk_2.png').convert_alpha()
+player_rect = player_surface1.get_rect(midbottom = (player_x, 300))
+text_surface = test_font.render('My Game', False, 'blue')
+text_rect = text_surface.get_rect(midbottom = (400, 100))
+score_surf = score_font.render(f'score: {score}', False, 'red')
+score_rect = score_surf.get_rect(center = (50,50))
+
+
+invul_frames = 0
+snail_x = 600
+player_x = 80
+right = True
+step = 0
+
+
+
+number = 0
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEMOTION: 
+            if player_rect.collidepoint(event.pos):
+                print("yo")
+            
+
+    screen.blit(sky_surface, (0,0))
+    screen.blit(ground_surface, (0, 300))
+    score_surf = score_font.render(f'score: {score}', False, 'red')
+    score_rect = score_surf.get_rect(center = (50,50))
+    screen.blit((score_surf), (score_rect))
+    screen.blit(text_surface, (text_rect))
+    screen.blit(snail1, (snail_rect))
+
+
+
+    if right:
+        snail_rect.x += 4
+    if snail_rect.left >= 800: snail_rect.right = 0
+
+    if step%10 < 5:
+        screen.blit(player_surface1, player_rect)
+    else:
+        screen.blit(player_surface2, player_rect)
+
+    if invul_frames == 0 and snail_rect.colliderect(player_rect) == 1:
+        print ("you have died")
+        invul_frames = 120
+
+    if invul_frames > 0:
+        invul_frames -= 1
+
+    score += 1
+
+
+    pygame.display.update()
+    clock.tick(60)
+    step += 1
+    #mouse_pos = pygame.mouse.get_pos()
+    #if player_rect.collidepoint(mouse_pos):
+    #    if pygame.mouse.get_pressed() == (True, False, False):
+    #        print (f"YES{number}")
+    #        number += 1
+
+    
+
+    
+
+  
+pygame.quit()
