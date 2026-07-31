@@ -1,0 +1,104 @@
+import random
+
+#-------------node_gen----------------
+width = 5 #amount of combats per row 
+height = 10 #amount floors (per act)
+map = []
+node_types = []
+def node_generation():
+    floor_0 = True
+    if floor_0 == True:
+        node_types_1 = random.choices(["combat","empty"], weights = [50,50], k = 3 * width)
+        for i in range (width):
+            if node_types_1[i] == "combat":
+                n += 1 #(en dan zien)
+    # wss beter, random.randint(2,4) zoveel combats
+    node_types_2 = random.choices(["combat","empty"], weights = [50,50], k = 2 * width)
+
+
+    node_types_3 = random.choices(["combat","shop","elite","event","empty"], weights=[50,5,10,20,40], k = 3 * width)
+    node_types_4 = random.choices(["chest","empty"], weights=[50,40], k = width)
+    node_types_5 = random.choices(["combat","shop","elite","event","empty"], weights=[40,10,15,20,40], k = 3 * width)
+    node_types.extend(node_types_1)
+    node_types.extend(node_types_2)
+    node_types.extend(node_types_3)
+    node_types.extend(node_types_4)
+    node_types.extend(node_types_5)
+#------------node disctibution------------
+def node_distribution():
+    for i in range (height):
+        map.append([])
+        for j in range (width):
+            node = {"id_y": i,
+                    "id_x": j, 
+                    "x": 10 + 5 * j, 
+                    "y": 10 + 10 * i,
+                    "type": node_types[j + width * i],
+                    "connect": []}
+            map[i].append(node)
+
+def combat():
+    print(f"combat in progress on floor {map[i][j]["id_y"]}" )
+def event():
+    print ("event")
+def elite():
+    print("elite")
+# for engagin battle, ask where to go (what i and j that has), -> if possible -> def combat/shop/etc
+
+for i in range (height):
+    break
+    for j in range (width):
+        if map[i][j]["type"] == "combat":
+            combat()
+        if map[i][j]["type"] == "event":
+            event()
+        if map[i][j]["type"] == "elite":
+            elite()
+
+w1 = 20
+w2 = 5
+
+def map_simple():
+    for i in range (height):
+        for j in range (width):
+            if map[i][j]['type'] == "empty": 
+                map[i][j]['type'] = " "
+        print (f"{map[i][0]["type"]:^{w1}}{' ':^{w2}}{map[i][1]["type"]:^{w1}}{' ':^{w2}}{map[i][2]['type']:^{w1}}")
+
+
+
+#id_x = x
+#id_y = y
+
+#-> 
+#id_x = x - 1, x, x+ 1
+#id_y = y + 1
+equation = [lambda x: x-1,
+            lambda x: x,
+            lambda x: x+1,]
+def node_connection():
+    for i in range (height):
+        for j in range (width):
+            if map[i][j]['type'] != "empty":
+                for loop in range (random.randint(1,2)):
+                    x = random.choice(equation)(j)
+                    y = i + 1
+                    if map[y][x]['type'] == "empty":
+                        map[i][j]['connect'].append(f"({x},{y})")
+                        print (f"{map[i][j]['id_x']}")
+                        print (f"{map[i][j]['id_y']}")
+                        print (map[i][j]['connect'])
+                        print ("_-_-_-_-_-_-")
+            else:
+                print ("empty node")
+
+
+
+
+node_generation()
+node_distribution()
+node_connection()
+
+# regels, bindingen
+
+#als x = negatief => mag niet
