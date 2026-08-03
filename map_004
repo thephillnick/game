@@ -1,18 +1,19 @@
-
 import random
 import pygame
 #------------pygame constants---------
+pygame.init()
 screen = pygame.display.set_mode((600,700))
 pygame.display.set_caption ("game")
 clock = pygame.time.Clock()
 # -------------node_gen----------------
-width = 5 # amount of nodes per row
+width = 5 
 middle = width / 2
-height = 10  # amount of floors (per act)
+height = 10  
 floor = 0
 map = []
 
 def map_create_placeholder():
+    map.clear()
     for i in range (height):
         map.append([])
         for j in range (width):
@@ -22,8 +23,7 @@ def map_create_placeholder():
                     "type": "empty",
                     "connect": [],
                     "onmogelijk": []
-                    }
-            
+                    }           
             map[i].append(node)
 
 def note_creation_floor_0():
@@ -36,11 +36,11 @@ def note_creation_floor_0():
     for j in range(width):
         map[1][j]['type'] = node_types[j]
         if node_types[j] != "empty":
-            map[0][0]['connect'].append(f"({j},{1})")
+            map[0][0]['connect'].append((j,1))
 
 equation = [-1, 0, 1]
 
-def further_note_connection():
+def further_node_connection():
     node_amount = 0
     for j in range (width):
         if map[floor][j]['type'] != "empty":
@@ -62,32 +62,30 @@ def further_note_connection():
             x = j + offset
             y = floor + 1
 
-            if not (0 <= x < width) or map[floor][j - 1] == []:
+            if not (0 <= x < width):
                 continue
                 
             if j > 0 and map[floor][j - 1]['connect']:
                 x_list = []
                 last_left_target = 0
                 for k in range (len(map[floor][j - 1]['connect'])):
-                    x_list.append(int(map[floor][j - 1]['connect'][k].split(',')[0].strip('(')))
+                    x_list.append(map[floor][j - 1]['connect'][k][0])
                     last_left_target = max(x_list)
                 if x < last_left_target:
                     continue
 
-            add = f"({x},{y})"
+            add = (x,y)
             if add not in current_node['connect']:
                 current_node['connect'].append(add)
 
                 node = {
                 "id_y": y,
                 "id_x": x,
-                "x": 10 + 5 * j,
-                "y": 10 + (floor + 1) * 10,
                 "type": "tbd",
                 "connect": [],
                 "onmogelijk": []
                 }
-            map[floor + 1][x] = node
+                map[floor + 1][x] = node
             #------- creating rules--------
 
             if current_node['type'] == "elite":
@@ -98,10 +96,10 @@ def further_note_connection():
         #     map[floor][j]['type'] = "empty"
             
                 
-            
-    return floor + 1
+    if floor >= height - 1: return floor        
+    else: return floor + 1
 
-def further_not_creation():
+def further_node_creation():
     combat = 0
     elite = 0
     shop = 0
@@ -146,8 +144,8 @@ def further_not_creation():
 map_create_placeholder()
 note_creation_floor_0()
 for i in range (height - 1):
-    floor = further_note_connection()
-    further_not_creation()
+    floor = further_node_connection()
+    further_node_creation()
 
 
 
@@ -156,7 +154,6 @@ for i in range (height - 1):
 
 #-------------------- pygame ------------------------
 act1_active = True
-pygame.init()
 
 
 # ------------sprites---------
@@ -192,11 +189,7 @@ class map_nodes(pygame.sprite.Sprite):
                     }
         self.image = surfaces[f"{node_type}"]
         self.rect = self.image.get_rect(center = (x,y))
-        
-
-
-        
-    
+            
 
     def update(self):
         pass
@@ -218,8 +211,8 @@ def form_connections (i,j):
             pygame.draw.line(screen,'black', (x,y), (x_con, y_con), 5)
         else:
             for k in range (len(current_node['connect'])):
-                x_con = int(current_node['connect'][k].split(',')[0].strip('(')) * 100 + 100
-                y_con = screen.get_height() - (int(current_node['connect'][k].split(',')[1].strip(')')) * 50 + 70)            
+                x_con = int(current_node['connect'][k][0] * 100 + 100)
+                y_con = screen.get_height() - (current_node['connect'][k][1] * 50 + 70)            
                 pygame.draw.line(screen,'black', (x,y), (x_con, y_con), 5)
 
         
@@ -258,40 +251,8 @@ while running:
     clock.tick(60)
 
 
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-map_create_placeholder()
-note_creation_floor_0()
-for i in range (height):
-    floor = further_note_connection()
-    further_not_creation()
-
-    for j in range(width):
-        node = map[floor - 1][j]
-        print(f"Node X: {node['id_x']}, Y: {node['id_y']}")
-        print(f"Type: {node['type']}")
-        print(f"Connections: {node['connect']}")
-        print("------")
-
-    print ("--------------------------next---------------------------------")
-
-
-
-
+#debugg
 #(totaal aantal: op einde)
 #remove duplicate routes
+#interactable -> cirkel
+#beter fotos
