@@ -1,0 +1,162 @@
+import random
+
+# -------------node_gen----------------
+width = 5  # amount of nodes per row
+height = 10  # amount of floors (per act)
+floor = 0
+map = []
+
+def map_create_placeholder():
+    for i in range (height):
+        map.append([])
+        for j in range (width):
+            node = {
+                    "id_y": i,
+                    "id_x": j,
+                    "x": 10 + 5 * j,
+                    "y": 10 + i * 10,
+                    "type": "empty",
+                    "connect": [],
+                    "onmogelijk": []
+                    }
+            
+            map[i].append(node)
+
+def note_creation_floor_0():
+    # Keep rolling until we get at least 2 combat nodes
+    while True:
+        node_types = random.choices(["combat", "empty"], weights=[60, 40], k=width)
+        if node_types.count("combat") >= 2:
+            break
+    for j in range(width):
+        node = {
+            "id_y": floor,
+            "id_x": j,
+            "x": 10 + 5 * j,
+            "y": 10 + floor * 10,
+            "type": node_types[j],
+            "connect": [],
+            "onmogelijk": []
+        }
+        map[0][j] = node
+
+equation = [-1, 0, 1]
+
+def further_note_connection():
+    node_amount = 0
+    for j in range (width):
+        if map[floor][j]['type'] != "empty":
+            node_amount += 1
+
+    for j in range(width):
+        current_node = map[floor][j]
+        if current_node['type'] == "empty":
+            continue
+
+        n = 20 + node_amount
+        m = 20 
+        num_connections = random.choices((1,2), weights=(n,m))[0]
+        attempts = 0
+
+        while len(current_node['connect']) < num_connections and attempts < 10:
+            attempts += 1
+            offset = random.choice(equation)
+            x = j + offset
+            y = floor + 1
+
+            if not (0 <= x < width) or map[floor][j - 1] == []:
+                continue
+                
+            if j > 0 and map[floor][j - 1]['connect']:
+                last_left_target = int(map[floor][j - 1]['connect'][-1].split(',')[0].strip('('))
+                if x < last_left_target:
+                    continue
+
+            add = f"({x},{y})"
+            if add not in current_node['connect']:
+                current_node['connect'].append(add)
+
+                node = {
+                "id_y": floor + 1,
+                "id_x": x,
+                "x": 10 + 5 * j,
+                "y": 10 + (floor + 1) * 10,
+                "type": "tbd",
+                "connect": [],
+                "onmogelijk": []
+                }
+            map[floor + 1][x] = node
+            
+                #------- creating rules--------
+                
+            if current_node['type'] == "elite":
+                map[y][x]['onmogelijk'].append("elite")
+            if current_node['type'] == "shop":
+                map[y][x]['onmogelijk'].append("shop")
+    return floor + 1
+
+def further_not_creation():
+    combat = 0
+    elite = 0
+    shop = 0
+    event = 0
+    chest = 0
+    if floor < 3:
+        combat = 100
+    elif 3 <= floor < 6:
+        combat = 100
+        elite = 50
+        shop = 20
+        event = 60
+    elif floor == 6:
+        chest = 100
+    elif 6 < floor < height:
+        combat = 100
+        elite = 60
+        shop = 30
+        event = 70
+
+
+
+
+
+
+    for j in range (width):
+        node_types = ["combat", "elite", "shop", "event","chest"]
+        weight = [combat,elite,shop,event,chest]
+        current_node = map[floor][j]
+        if current_node['type'] == "empty": 
+            continue
+        if len(current_node['onmogelijk']) > 0:
+            (current_node['onmogelijk']) = list(set(current_node['onmogelijk']))
+            for ind in range (len(current_node['onmogelijk'])):
+                if current_node['onmogelijk'][ind] == "elite":
+                    node_types.remove("elite")
+                    print("removed(elite)")
+                    weight.remove(elite)
+                if current_node['onmogelijk'][ind] == "shop":
+                    node_types.remove("shop")
+                    print("removed(shop)")
+                    weight.remove(shop)        
+        current_node['type'] = random.choices(node_types, weights = weight)[0]
+
+
+
+
+
+
+
+map_create_placeholder()
+note_creation_floor_0()
+for i in range (height):
+    floor = further_note_connection()
+    further_not_creation()
+
+    for j in range(width):
+        node = map[floor - 1][j]
+        print(f"Node X: {node['id_x']}, Y: {node['id_y']}")
+        print(f"Type: {node['type']}")
+        print(f"Connections: {node['connect']}")
+        print("------")
+
+    print ("--------------------------next---------------------------------")
