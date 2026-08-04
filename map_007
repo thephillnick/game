@@ -1,0 +1,592 @@
+
+import random
+import pygame
+import os
+#------------pygame constants---------
+pygame.init()
+screen = pygame.display.set_mode((1920,1080))
+pygame.display.set_caption ("game")
+clock = pygame.time.Clock()
+
+playing_node = "tbd"
+playing_floor = 0
+in_play_nodes = []
+route = []
+map_lock = False
+map_show = True
+deck_show = False
+combat_show = False
+
+# -------------node_gen----------------
+width = 5 
+middle = width / 2
+height = 12
+floor = 0
+map = []
+
+def map_create_placeholder():
+    map.clear()
+    for i in range (height):
+        map.append([])
+        for j in range (width):
+            node = {
+                    "id_y": i,
+                    "id_x": j,
+                    "type": "empty",
+                    "connect": [],
+                    "onmogelijk": []
+                    }           
+            map[i].append(node)
+
+def note_creation_floor_0():
+    map[0][0]['type'] = "start"
+    map[height - 1][0]['type'] = "end"
+    while True:
+        node_types = random.choices(["combat", "empty"], weights=[60, 40], k=width)
+        if 4 > node_types.count("combat") >= 2:
+            break
+    for j in range(width):
+        map[1][j]['type'] = node_types[j]
+        if node_types[j] != "empty":
+            map[0][0]['connect'].append((j,1))
+
+
+def remove_9_0():
+    if map[height - 2][0]['type'] != "empty" and map[height - 2][0]['connect'] == (9,0):  
+        print("1"); print (map[height - 2][0]['connect']); pass
+    elif  map[height - 2][0]['type'] != "empty" and map[height -2][1]['connect'] == (9,0): 
+        print("2"); print (map[height - 2][1]['connect']); pass
+    else:
+        print("3")
+        map[height-1][0]['type'] = "empty"
+        map[height-1][0]['connect'].clear()
+
+equation = [-1, 0, 1]
+
+def further_node_connection():
+    node_amount = 0
+    for j in range (width):
+        if map[floor][j]['type'] != "empty":
+            node_amount += 1
+
+    for j in range(width):
+        current_node = map[floor][j]
+        if current_node['type'] == "empty":
+            continue
+
+        n = 20 + node_amount
+        m = 20 
+        num_connections = random.choices((1,2), weights=(n,m))[0]
+        attempts = 0
+
+        while len(current_node['connect']) < num_connections and attempts < 20:
+            attempts += 1
+            offset = random.choice(equation)
+            x = j + offset
+            if floor == height - 1: x = 0
+            y = floor + 1
+
+            if not (0 <= x < width):
+                continue
+                
+            if j > 0 and map[floor][j - 1]['connect']:
+                x_list = []
+                last_left_target = 0
+                for k in range (len(map[floor][j - 1]['connect'])):
+                    x_list.append(map[floor][j - 1]['connect'][k][0])
+                    last_left_target = max(x_list)
+                if x < last_left_target:
+                    continue
+
+            add = (x,y)
+            if add not in current_node['connect']:
+                current_node['connect'].append(add)
+            if map[y][x]['type'] == "empty":
+                map[y][x]['type'] = 'tbd'
+            #------- creating rules--------
+
+            if current_node['type'] == "elite":
+                map[y][x]['onmogelijk'].append("elite")
+            if current_node['type'] == "shop":
+                map[y][x]['onmogelijk'].append("shop")
+        
+
+            
+    if floor >= height - 1: return floor        
+    else: return floor + 1
+
+def further_node_creation():
+    combat = 0
+    elite = 0
+    shop = 0
+    event = 0
+    chest = 0
+    end = 0
+    if floor < 3:
+        combat = 100
+    elif 3 <= floor < 6:
+        combat = 100
+        elite = 50
+        shop = 20
+        event = 60
+    elif floor == 6:
+        chest = 100
+    elif 6 < floor < height - 1:
+        combat = 100
+        elite = 60
+        shop = 30
+        event = 70
+    elif floor == height - 1:
+        end = 100
+
+    for j in range (width):
+        node_types = ["combat", "elite", "shop", "event","chest" ,"end"]
+        weight = [combat,elite,shop,event,chest,end]
+        current_node = map[floor][j]
+        if current_node['type'] == "empty": 
+            continue
+        if len(current_node['onmogelijk']) > 0:
+            (current_node['onmogelijk']) = list(set(current_node['onmogelijk']))
+            for ind in range (len(current_node['onmogelijk'])):
+                if current_node['onmogelijk'][ind] == "elite":
+                    node_types.remove("elite")
+                    weight.remove(elite)
+                if current_node['onmogelijk'][ind] == "shop":
+                    node_types.remove("shop")
+                    weight.remove(shop)        
+        current_node['type'] = random.choices(node_types, weights = weight)[0]
+
+
+
+map_create_placeholder()
+note_creation_floor_0()
+for i in range (height - 1):
+    floor = further_node_connection()
+    further_node_creation()
+      
+
+def form_connections (i,j):   
+    current_node = map[i][j]
+    x = screen.get_width() / 2 + ((960/width) * (current_node['id_x'] - ((width - 1)/2)) * 0.8)
+    y = screen.get_height() - screen.get_height() * (current_node['id_y']+1) / (height + 2)
+    if current_node == map[0][0]:
+        x = screen.get_width() / 2
+        y = screen.get_height() - 50
+    if current_node['type'] != "empty":
+        if current_node == map[height - 2][j]:
+            x_con = screen.get_width() / 2
+            y_con = screen.get_height() - screen.get_height() * (current_node['id_y'] + 1) / (height + 1) - 20
+            if (map[i][j]['id_x'],map[i][j]['id_y']) not in in_play_nodes: colour = 'grey'                
+            else: colour = 'grey'
+            if map[i][j] in route:
+                for k in range (width):
+                    if map[height - 1][k] in route: colour = 'black'
+                    
+            pygame.draw.line(screen,colour, (x,y), (x_con, y_con), 5)
+
+        else:
+            for k in range (len(current_node['connect'])):
+                x_base = current_node['connect'][k][0]
+                y_base = current_node['connect'][k][1]
+                x_con = screen.get_width() / 2 + ((960/width) * (x_base - ((width - 1)/2)) * 0.8)
+                y_con = screen.get_height() - screen.get_height() * (y_base  + 1) / (height + 2)
+                if (map[i][j]['id_x'],map[i][j]['id_y']) not in in_play_nodes: colour = 'grey'
+                else: colour = 'grey'             
+                if map[y_base][x_base] in route and map[i][j] in route: colour = 'black'
+                pygame.draw.line(screen,colour, (x,y), (x_con, y_con), 5)
+
+
+def map_loop (function):
+    for i in range (height):
+        for j in range (width):
+            function(i,j)
+
+def nodes_in_play(current_node):
+    if current_node == "tbd": current_node = map[0][0]
+    in_play_nodes.clear()
+    in_play_nodes.append((0,0))
+    start_floor = current_node['id_y']
+    in_play_nodes.append((current_node['id_x'],current_node['id_y']))
+    for i in range (start_floor, height):
+        for j in range (width):
+            node = map[i][j]
+            if (node['id_x'],node['id_y']) in in_play_nodes:
+                for k in range(len(node['connect'])):
+                    in_play_nodes.append(node['connect'][k])    
+nodes_in_play("tbd")
+
+
+def combat():
+    global combat_show, map_show
+    combat_show = True
+    map_show = False
+
+
+
+
+
+#-------------------- pygame ------------------------
+act1_active = True
+
+number = 0
+# ------------sprites---------
+base_path = os.path.dirname(os.path.abspath(__file__))
+deck_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "deck.png")).convert_alpha()), 0, 0.2)
+continue_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "continue.png")).convert_alpha()), 0, 0.2)
+map_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "map.png")).convert_alpha()), 0, 0.2)
+
+class map_nodes(pygame.sprite.Sprite):
+    def __init__(self, i, j):
+        self.circle_drawn = False        
+        super().__init__()
+        self.current_node = map[i][j]
+        self.node_type = self.current_node['type']
+        self.x = screen.get_width() / 2 + ((960/width) * (self.current_node['id_x'] - ((width - 1)/2)) * 0.8)
+        self.y = screen.get_height() - screen.get_height() * (self.current_node['id_y']+1) / (height + 2)
+        if self.node_type == "start":
+            self.x = screen.get_width() / 2
+            self.y = screen.get_height() - 50
+        if self.node_type == "end":
+            self.x = screen.get_width() / 2
+            self.y = screen.get_height() - screen.get_height() * (self.current_node['id_y']+1) / (height + 1)
+        
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        self.combat_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "sword.png")).convert_alpha()), 20, 0.1)
+        self.elite_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "doublesword.png")).convert_alpha()), 0, 0.1)
+        self.event_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "question.png")).convert_alpha()), 0, 0.1)
+        self.chest_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "chest.png")).convert_alpha()), 0, 0.1)
+        self.shop_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "buy.png")).convert_alpha()), 0, 0.02)
+        self.start_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "start.png")).convert_alpha()), 0, 0.4)
+        self.end_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "end.png")).convert_alpha()), 0, 0.6)
+        self.surfaces = {"combat": self.combat_surf,
+                    "elite": self.elite_surf,
+                    "event": self.event_surf,
+                    "chest": self.chest_surf,
+                    "shop": self.shop_surf,
+                    "empty": self.shop_surf,
+                    "start": self.start_surf,
+                    "end": self.end_surf,
+                    }
+        scale = 0.8
+        self.image = pygame.transform.rotozoom(self.surfaces[f"{self.node_type}"], 0, 0.7)
+        self.rect = self.image.get_rect(center = (self.x,self.y))
+        self.base_surface = self.image.copy()
+
+
+
+        #other_surfaces
+        if self.node_type in ["combat", "event", "elite", "shop", "chest"]:
+            scale = 0.3 * 0.7
+        else:
+            scale = 0.6
+        self.circle_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "circle.png")).convert_alpha()), 0, scale)
+        circle_x = self.base_surface.get_width() // 2
+        circle_y = self.base_surface.get_height() // 2
+        self.circle_rect = self.circle_surf.get_rect(center=(circle_x, circle_y))
+
+    def node_pressed(self):
+        global playing_floor
+        global map_lock
+        if pygame.mouse.get_pressed() == (1,0,0):
+            mouse_pos = pygame.mouse.get_pos()
+            if self.rect.collidepoint(mouse_pos):
+                node = self.current_node
+                if node['id_y'] == playing_floor and (node['id_x'],node['id_y']) in in_play_nodes and not map_lock:
+                    print(node['id_x'],node['id_y'], node['type'])
+                    playing_floor += 1
+                    route.append(node)
+                    nodes_in_play(node)
+                    self.circle_drawn = True
+                    map_lock = True
+
+                    if self.node_type == "combat":
+                        combat()
+                    elif self.node_type == "elite":
+                        combat()
+                        print ("elite")
+                    elif self.node_type == "event":
+                        combat()
+                    elif self.node_type == "shop":
+                        combat()
+                    elif self.node_type == "chest":
+                        combat()
+                    elif self.node_type == "rest":
+                        combat()
+                    elif self.node_type == "start":
+                        combat()
+                    elif self.node_type == "end":
+                        combat()
+
+                    map_lock = False
+
+                    
+
+                    
+
+
+    def circle_draw(self):        
+        if self.circle_drawn: 
+            surface = self.base_surface.copy()
+            x = self.circle_surf.get_width() // 2
+            y = self.circle_surf.get_height() // 2
+            rect = surface.get_rect(center=(x, y))
+            self.circle_surf.blit(surface, rect)            
+            self.image = self.circle_surf
+            self.rect = (self.circle_surf.get_rect(center=(self.x, self.y)))
+
+    def greyed_out_draw(self):
+        if (self.current_node['id_x'],self.current_node['id_y']) not in in_play_nodes and not self.circle_drawn:
+            self.image = pygame.transform.grayscale(self.image)
+
+       
+    def update(self):
+        self.node_pressed()
+        self.circle_draw()
+        self.greyed_out_draw()
+        
+class extra_map_nodes (pygame.sprite.Sprite):
+    def __init__(self, i):
+        super().__init__()
+        buttons_surf = {"deck":         (deck_surf,        (1750,300)),    
+                        "continue":     (continue_surf,    (1750,900))}
+        self.buttons = ["deck","continue"]
+        self.type = self.buttons[i]
+
+        surface, place = buttons_surf[self.type]
+        self.image = surface
+        self.rect = self.image.get_rect(center = place)
+
+    def button_press(self):
+        global map_show, deck_show
+        if pygame.mouse.get_pressed() == (1,0,0):
+            mouse_pos = pygame.mouse.get_pos()
+            if self.rect.collidepoint(mouse_pos):
+                if self.type == "deck":
+                    map_show = False
+                    deck_show = True
+                if self.type == "continue":
+                    print("continue")
+
+    def update(self):
+        self.button_press()
+
+class extra_deck_nodes (pygame.sprite.Sprite):
+    def __init__(self, i):
+        super().__init__()
+
+        buttons_surf = {    
+                        "continue":     (continue_surf,    (1750,900)),
+                        "map":          (map_surf,         (1750,100))}
+        buttons = ["continue","map"]
+        self.type = buttons[i]
+
+        surface, place = buttons_surf[self.type]
+        self.image = surface
+        self.rect = self.image.get_rect(center = place) 
+
+    def button_press(self):
+        global map_show, deck_show
+        if pygame.mouse.get_pressed() == (1,0,0):
+            mouse_pos = pygame.mouse.get_pos()
+            if self.rect.collidepoint(mouse_pos):
+                if self.type == "continue":
+                    # map_show = True
+                    # deck_show = False
+                    p_cards.append("strike")
+                    deck_group_update()
+                    
+                if self.type == "map":
+                    map_show = True
+                    deck_show = False
+                    
+
+    def update(self):
+        self.button_press()
+        
+class deck_cards(pygame.sprite.Sprite):
+    def __init__(self, type, cards):
+        super().__init__()
+        if len(p_cards) <= 20:
+            i = cards % 7
+            j = cards // 7
+            self.x = 30 + 205 * i
+            self.y = 30 + 300 * j
+            size = 1
+        else:
+            i = cards % 10
+            j = cards // 10
+            self.x = 30 + 150 * i
+            self.y = 30 + 200 * j
+            size = 0.7
+
+
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        strike_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "strike.png")).convert_alpha()), 0, 0.15 * size)
+        block_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "block.png")).convert_alpha()), 0, 0.15 * size)
+        card_surfaces = {"strike": strike_surf,
+                        "block": block_surf} 
+
+        self.image = card_surfaces[type]
+        self.rect = self.image.get_rect(topleft = (self.x,self.y))
+
+
+    def card_update(self):
+        pass
+        
+    def update(self):
+        self.card_update()
+        pass
+
+class extra_battle_nodes (pygame.sprite.Sprite):
+    def __init__(self, i):
+        super().__init__()
+        buttons_surf = {"deck":         (deck_surf,        (1750,150)),
+                        "continue":     (continue_surf,    (1700,700)),
+                        "map":          (map_surf,         (980, 100))
+                        }
+        self.buttons = ["deck","continue", "map"]
+        self.type = self.buttons[i]
+
+        surface, place = buttons_surf[self.type]
+        self.image = surface
+        self.rect = self.image.get_rect(topleft = place)
+
+    def button_press(self):
+        global map_show, deck_show, combat_show
+        if pygame.mouse.get_pressed() == (1,0,0):
+            mouse_pos = pygame.mouse.get_pos()
+            if self.rect.collidepoint(mouse_pos):
+                if self.type == "map":
+                    map_show = True
+                    combat_show = False
+                if self.type == "deck":
+                    deck_show = True
+                    combat_show = False
+                if self.type == "continue":
+                    print("continue")
+
+    def update(self):
+        self.button_press()
+
+# --------------backgrounds-----------------
+def background(type, scale):
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    wood_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "wood_background.jpg")).convert_alpha()), 90, 1)
+    paper_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "paper_background.jpg")).convert_alpha()), 0, 1)
+    battle_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "battle_background.jpg")).convert_alpha()), 0, 1)
+    card_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "card_background.jpg")).convert_alpha()), 0, 1)
+    x = screen.get_width() / 2
+    y = screen.get_height() / 2
+    if type == "wood":
+        surface = wood_surf
+    if type == "map":
+        surface = paper_surf
+    if type == "battle":
+        surface = battle_surf
+    if type == "card":
+        surface = card_surf
+    resised_surface = pygame.transform.smoothscale(surface, scale)
+    resised_rect = resised_surface.get_rect(center = (x,y))
+    screen.blit(resised_surface, resised_rect)
+
+def combat_in_progress():
+    font = pygame.font.Font(None, 200)
+    text = font.render('combat in progress', True, 'blue')
+    text_rect = text.get_rect(center = (screen.get_width()/2,screen.get_height()/2))
+    screen.blit(text,text_rect)
+    
+#----------constants-------------
+
+
+
+node_group = pygame.sprite.Group()
+for i in range (height):
+    for j in range (width):
+        if  map[i][j]['type'] != "empty":
+            node_group.add(map_nodes(i,j))
+
+map_buttons = pygame.sprite.Group()
+for i in range (2):
+    map_buttons.add(extra_map_nodes(i))
+
+deck_buttons = pygame.sprite.Group()
+for i in range (2):
+    deck_buttons.add(extra_deck_nodes(i))
+
+p_cards = ["strike","strike","strike","block","strike"]
+# p_cards.append("strike")
+# deck_group_update()
+# when adding cards -> need to also add to group
+#or
+
+
+deck_card_group = pygame.sprite.Group()
+def deck_group_update():
+    deck_card_group.empty()
+    for i in range (len(p_cards)):
+        deck_card_group.add(deck_cards(p_cards[i], i))
+
+deck_group_update()
+combat_buttons = pygame.sprite.Group()
+for i in range (3):
+    combat_buttons.add(extra_battle_nodes(i))
+        
+
+running = True
+# ----------game----------
+run = 0
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    if map_show:
+        background("wood", (1920,1080))
+        background("map", (960,1080))
+        map_loop(form_connections)
+        node_group.draw(screen)
+        playing_node = node_group.update()
+        map_buttons.draw(screen)
+        map_buttons.update()
+
+    if deck_show:
+        background("wood", (1920,1080))
+        deck_buttons.draw(screen)
+        deck_buttons.update()
+        deck_card_group.draw(screen)
+        deck_card_group.update
+
+    if combat_show:
+        background("battle", (1920,1080))
+        combat_in_progress()
+        combat_buttons.draw(screen)
+        combat_buttons.update()
+
+
+    pygame.display.update()
+    clock.tick(60)
+
+#debugg
+#(totaal aantal: op einde)
+#remove duplicate routes
+#interactable -> cirkel
+#beter fotos
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
