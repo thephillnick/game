@@ -1,0 +1,391 @@
+class Gamestate:
+    def __init__(self):
+        self.combat_show = False
+        self.map_show = True
+        self.deck_show = False
+        self.current_enemie = None
+
+    def start_combat(self):
+        background("battle", (1920,1080))
+        combat_in_progress()
+        combat_buttons.draw(screen)
+        self.combat_show = True
+        self.map_show = False
+        self.deck_show = False
+        
+        # enemie_number = random.randint(1, 4)
+        # self.current_enemie = enemie_functions[enemie_number](player['roundje'])     
+          
+        # normal_battle()
+
+    def enemie(self):
+        return self.current_enemie
+    
+    def open_deck(self):
+        print("yes")
+        self.deck_show = True
+        self.map_show = False
+        self.combat_show = False
+
+    def open_map(self):
+        self.deck_show = False
+        self.map_show = True
+        self.combat_show = False
+
+game_state = Gamestate()
+
+act1_active = True
+
+number = 0
+# ------------sprites---------
+base_path = os.path.dirname(os.path.abspath(__file__))
+deck_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "deck.png")).convert_alpha()), 0, 0.2)
+continue_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "continue.png")).convert_alpha()), 0, 0.2)
+map_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "map.png")).convert_alpha()), 0, 0.2)
+
+class map_nodes(pygame.sprite.Sprite):
+    def __init__(self, i, j):
+        self.circle_drawn = False        
+        super().__init__()
+        self.current_node = map[i][j]
+        self.node_type = self.current_node['type']
+        self.x = screen.get_width() / 2 + ((960/width) * (self.current_node['id_x'] - ((width - 1)/2)) * 0.8)
+        self.y = screen.get_height() - screen.get_height() * (self.current_node['id_y']+1) / (height + 2)
+        if self.node_type == "start":
+            self.x = screen.get_width() / 2
+            self.y = screen.get_height() - 50
+        if self.node_type == "end":
+            self.x = screen.get_width() / 2
+            self.y = screen.get_height() - screen.get_height() * (self.current_node['id_y']+1) / (height + 1)
+        
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        self.combat_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "sword.png")).convert_alpha()), 20, 0.1)
+        self.elite_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "doublesword.png")).convert_alpha()), 0, 0.1)
+        self.event_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "question.png")).convert_alpha()), 0, 0.1)
+        self.chest_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "chest.png")).convert_alpha()), 0, 0.1)
+        self.shop_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "buy.png")).convert_alpha()), 0, 0.02)
+        self.start_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "start.png")).convert_alpha()), 0, 0.4)
+        self.end_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "end.png")).convert_alpha()), 0, 0.6)
+        self.surfaces = {"combat": self.combat_surf,
+                    "elite": self.elite_surf,
+                    "event": self.event_surf,
+                    "chest": self.chest_surf,
+                    "shop": self.shop_surf,
+                    "empty": self.shop_surf,
+                    "start": self.start_surf,
+                    "end": self.end_surf,
+                    }
+        scale = 0.8
+        self.image = pygame.transform.rotozoom(self.surfaces[f"{self.node_type}"], 0, 0.7)
+        self.rect = self.image.get_rect(center = (self.x,self.y))
+        self.base_surface = self.image.copy()
+
+
+
+        #other_surfaces
+        if self.node_type in ["combat", "event", "elite", "shop", "chest"]:
+            scale = 0.3 * 0.7
+        else:
+            scale = 0.6
+        self.circle_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "circle.png")).convert_alpha()), 0, scale)
+        circle_x = self.base_surface.get_width() // 2
+        circle_y = self.base_surface.get_height() // 2
+        self.circle_rect = self.circle_surf.get_rect(center=(circle_x, circle_y))
+
+    def node_pressed(self):
+        global playing_floor
+        global map_lock
+        if pygame.mouse.get_pressed() == (1,0,0):
+            mouse_pos = pygame.mouse.get_pos()
+            if self.rect.collidepoint(mouse_pos):
+                node = self.current_node
+                if node['id_y'] == playing_floor and (node['id_x'],node['id_y']) in in_play_nodes and not map_lock:
+                    print(node['id_x'],node['id_y'], node['type'])
+                    playing_floor += 1
+                    route.append(node)
+                    nodes_in_play(node)
+                    self.circle_drawn = True
+                    map_lock = True
+                    
+                    if self.node_type == "combat":
+                        game_state.start_combat()
+                    elif self.node_type == "elite":
+                        game_state.start_elite()
+                    elif self.node_type == "event":
+                        pass
+                    elif self.node_type == "shop":
+                        pass
+                    elif self.node_type == "chest":
+                        pass
+                    elif self.node_type == "rest":
+                        pass
+                    elif self.node_type == "start":
+                        pass
+                    elif self.node_type == "end":
+                        pass
+
+                    map_lock = False
+
+
+                    
+
+                    
+
+
+    def circle_draw(self):        
+        if self.circle_drawn: 
+            surface = self.base_surface.copy()
+            x = self.circle_surf.get_width() // 2
+            y = self.circle_surf.get_height() // 2
+            rect = surface.get_rect(center=(x, y))
+            self.circle_surf.blit(surface, rect)            
+            self.image = self.circle_surf
+            self.rect = (self.circle_surf.get_rect(center=(self.x, self.y)))
+
+    def greyed_out_draw(self):
+        if (self.current_node['id_x'],self.current_node['id_y']) not in in_play_nodes and not self.circle_drawn:
+            self.image = pygame.transform.grayscale(self.image)
+
+       
+    def update(self):
+        self.node_pressed()
+        self.circle_draw()
+        self.greyed_out_draw()
+        
+class extra_button_nodes (pygame.sprite.Sprite):
+    def __init__(self, j, buttons):
+        super().__init__()
+        
+        buttons_surf = {    
+                        "continue":     (continue_surf,    (1750,900)),
+                        "map":          (map_surf,         (1750,100)),
+                        "deck":         (deck_surf,        (1750,300))}
+        
+
+        self.type = buttons[j]
+
+        surface, place = buttons_surf[self.type]
+        self.image = surface
+        self.rect = self.image.get_rect(center = place) 
+
+    def button_press(self):
+        if pygame.mouse.get_pressed() == (1,0,0):
+            mouse_pos = pygame.mouse.get_pos()
+            if self.rect.collidepoint(mouse_pos):
+                if self.type == "continue":
+                    pass
+                                       
+                if self.type == "map":
+                    print("map")
+                    game_state.open_map()
+                if self.type == "deck":
+                    print("deck")
+                    game_state.open_deck()
+                
+                    
+
+    def update(self):
+        self.button_press()
+        
+class deck_cards(pygame.sprite.Sprite):
+    def __init__(self, type, cards):
+        super().__init__()
+        if len(p_cards) <= 20:
+            i = cards % 7
+            j = cards // 7
+            self.x = 30 + 205 * i
+            self.y = 30 + 300 * j
+            size = 1
+        else:
+            i = cards % 10
+            j = cards // 10
+            self.x = 30 + 150 * i
+            self.y = 30 + 200 * j
+            size = 0.7
+
+
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        strike_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "strike.png")).convert_alpha()), 0, 0.15 * size)
+        block_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "block.png")).convert_alpha()), 0, 0.15 * size)
+        card_surfaces = {"strike": strike_surf,
+                        "block": block_surf} 
+
+        self.image = card_surfaces[type]
+        self.rect = self.image.get_rect(topleft = (self.x,self.y))
+
+
+    def card_update(self):
+        pass
+        
+    def update(self):
+        self.card_update()
+        pass
+
+class player_class(pygame.sprite.Sprite):
+    def __init__(self, part):
+        super().__init__()
+        self.max_hp = 100
+        self.hp = 100
+        x_cord = 300
+        y_cord = 600
+        self.bar_width = 150
+        self.bar_height = 20
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        player = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "player.png")).convert_alpha()), 0, 0.15)
+        player_strike = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "player.strike.png")).convert_alpha()), 0, 0.15)
+
+        hp_bar = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "bar.png")).convert_alpha()), 0, 0.15)
+        green_surf = pygame.image.load(os.path.join(base_path, "game_images", "health_bar.png"))
+
+        if part == "player":
+            print ("player")
+            surfaces = ["player", "player_strike"]
+            dic = {"player": player,
+                    "player_strike": player_strike}
+            self.image = dic[surfaces[1]]
+            self.rect = self.image.get_rect(midbottom = (x_cord,y_cord))
+
+        if part == "hp_bar1":           
+            hp_bar_frame = pygame.transform.smoothscale(hp_bar, (self.bar_width, self.bar_height))
+            
+            self.image = hp_bar_frame
+            self.rect = self.image.get_rect(bottomleft = (x_cord - 30, y_cord + 50))
+
+        if part == "hp_bar2":
+            health_bar = pygame.transform.smoothscale(hp_bar, (self.bar_width, self.bar_height))
+            ratio = self.hp / self.max_hp 
+            green_width = int(self.bar_width * ratio)
+
+            crop_rect = pygame.Rect(0, 0, green_width, self.bar_height)
+            cropped_image = health_bar.subsurface(crop_rect)
+            self.image = cropped_image
+            self.rect = self.image.get_rect(bottomleft = (x_cord - 30, y_cord + 50))
+
+    def hp_bar_update(self):
+        self.max_hp = player['max_hp']
+        self.hp = max(0, player['hp'])
+
+    def update(self):
+        self.hp_bar_update()
+
+
+class enemie_class(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.enemie = game_state.enemie()
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        gerald_the_vast = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "orc.jpg")).convert_alpha()), 0, 0.15)
+        player_strike = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "player.strike.png")).convert_alpha()), 0, 0.15)
+
+        enemie_surfaces = {"gerald_the_vast": gerald_the_vast}
+        
+        self.image = enemie_surfaces[self.enemie['enemie_name']]
+        self.rect = self.image.get_rect(center = (300,600))
+
+# --------------backgrounds-----------------
+def background(type, scale):
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    wood_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "wood_background.jpg")).convert_alpha()), 90, 1)
+    paper_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "paper_background.jpg")).convert_alpha()), 0, 1)
+    battle_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "battle_background.jpg")).convert_alpha()), 0, 1)
+    card_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "card_background.jpg")).convert_alpha()), 0, 1)
+    x = screen.get_width() / 2
+    y = screen.get_height() / 2
+    if type == "wood":
+        surface = wood_surf
+    if type == "map":
+        surface = paper_surf
+    if type == "battle":
+        surface = battle_surf
+    if type == "card":
+        surface = card_surf
+    resised_surface = pygame.transform.smoothscale(surface, scale)
+    resised_rect = resised_surface.get_rect(center = (x,y))
+    screen.blit(resised_surface, resised_rect)
+
+def combat_in_progress():
+    font = pygame.font.Font(None, 200)
+    text = font.render('combat in progress', True, 'blue')
+    text_rect = text.get_rect(center = (screen.get_width()/2,screen.get_height()/2))
+    screen.blit(text,text_rect)
+    
+#----------constants-------------
+
+
+node_group = pygame.sprite.Group()
+for i in range (height):
+    for j in range (width):
+        if  map[i][j]['type'] != "empty":
+            node_group.add(map_nodes(i,j))
+combat_buttons = pygame.sprite.Group()
+map_buttons = pygame.sprite.Group()
+deck_buttons = pygame.sprite.Group()
+map_types = ["deck", "map", "combat"]
+group_types = {"deck":      (deck_buttons,      ["continue","map"]),
+               "map":       (map_buttons,       ["deck","continue"]),
+               "combat":    (combat_buttons,    ["deck", "map"])}
+for i in range (len(map_types)):
+    group, buttons = group_types[map_types[i]]
+    for j in range (len(buttons)):
+        group.add(extra_button_nodes(j, buttons))
+
+p_cards = ["strike","strike","strike","block","strike"]
+# p_cards.append("strike")
+# deck_group_update()
+# when adding cards -> need to also add to group
+#or
+
+deck_card_group = pygame.sprite.Group()
+player_group = pygame.sprite.GroupSingle()
+player_attributes = ("player","hp_bar1","hp_bar2")
+for i in range (len(player_attributes)):
+    player_group.add(player_class(player_attributes[i]))
+def deck_group_update():
+    deck_card_group.empty()
+    for i in range (len(p_cards)):
+        deck_card_group.add(deck_cards(p_cards[i], i))
+
+deck_group_update()
+
+
+running = True
+# ----------game----------
+run = 0
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    if game_state.map_show:
+        background("wood", (1920,1080))
+        background("map", (960,1080))
+        map_loop(form_connections)
+        node_group.draw(screen)
+        playing_node = node_group.update()
+        map_buttons.draw(screen)
+        map_buttons.update()
+
+    if game_state.deck_show:
+        background("wood", (1920,1080))
+        deck_buttons.draw(screen)
+        deck_buttons.update()
+        deck_card_group.draw(screen)
+        deck_card_group.update
+
+    if game_state.combat_show:
+        background("battle", (1920,1080))
+        combat_in_progress()
+        combat_buttons.draw(screen)
+        combat_buttons.update()
+        player_group.draw(screen)
+        player_group.update()
+
+
+
+    pygame.display.update()
+    clock.tick(60)
+
+#debugg
+#(totaal aantal: op einde)
+#remove duplicate routes
+#interactable -> cirkel
+#beter fotos
