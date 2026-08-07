@@ -1,0 +1,2834 @@
+import pygame
+import random
+import os
+import time
+
+#-------------stats--------------
+r = 1 #difficulty
+hp = round(80/r)
+player = {"hp":hp,
+          "max_hp": hp,
+          "gold": 99,
+          "block": 0,
+          "remove_block": "yes",
+          "extra_start_draw": 0,
+          "extra_draw": 0,
+          "strength": 0,
+          "total_energy": 3,
+          "energy": 3,
+          "extre_start_draw": 0,
+          "roundje": 1,
+          "turn": 1,
+          "dex": 0,
+          "vulnerable": 0,
+          "weak": 0,
+          "frail": 0,
+          "potion_slots": 3,
+          "potion_chance": 0.2}
+player_name = "the phillnick"
+
+e_card_types = ("attack","block","status", "debuff")
+
+#-------------piles--------------
+p_cards = ["strike","strike","strike","block","block","block"] #deck
+p_common_cards = ["gimme", "slam","jumble","empower", "energise","blockle",]
+p_rare_cards = ["gamble","card_maker","demonate"]
+p_very_rare_cards = ["nog niks"]
+p_extra = []
+p_draw_pile = [] 
+p_draw_pile = p_cards.copy() 
+p_hand_pile = []
+p_discard_cards = []
+p_exhaust_cards = []
+p_exhaust_not_returning_cards = []
+#-----------------------------------------------
+#-----------gamestate-------------------
+class Gamestate:
+    def __init__(self):
+        self.combat_show = False
+        self.map_show = True
+        self.deck_show = False
+        self.current_enemie = None
+
+    def start_combat(self):
+        background("battle", (1920,1080))
+        combat_buttons.draw(screen)
+        self.combat_show = True
+        self.map_show = False
+        self.deck_show = False
+        
+        enemie_number = random.randint(1, 4)
+        self.current_enemie = enemie_functions[enemie_number](player['roundje']) 
+        enemie_group.empty()
+        for i in range (self.current_enemie['amount']):
+            enemie_attributes = ("enemie","hp_bar1","hp_bar2","name")
+            for j in range (len(enemie_attributes)):
+                enemie_group.add(enemie_class(enemie_attributes[j], i)  )  
+          
+
+    def enemie(self):
+        return self.current_enemie
+    
+    def open_deck(self):
+        self.deck_show = True
+        self.map_show = False
+        self.combat_show = False
+
+    def open_map(self):
+        self.deck_show = False
+        self.map_show = True
+        self.combat_show = False
+
+    def turn_switch(self, item):
+        if item == "player":
+            self.player_turn_active = True
+            self.enemie_turn_active = False
+        if item == "enemie":
+            self.player_turn_active = False
+            self.enemie_turn_active = True
+        
+
+    # def lock(self, true):
+    #     for item in hand_card_group:
+    #         item.lock = true
+
+
+
+game_state = Gamestate()
+
+random_stats = {"gremlin_boss_hp_counter": 0,
+                "current_enemie": 0,
+                "targeted_enemie": 0,
+                "gremlin_strength": 0,
+                "bomb_dmg": 0}
+
+def updated_hand ():
+    print (f"energy: {player["energy"]}/{player["total_energy"]}")
+    n = len(p_hand_pile)
+    for i in range (0, n ):
+        card, energy, target = card_functions[p_hand_pile[i]]
+        print (f"{i+1}: {p_hand_pile[i]} ({energy})")
+
+def start_draw():
+    amount = 5 + player["extra_draw"] + player["extra_start_draw"]
+    random.shuffle(p_draw_pile)
+    if amount > len(p_draw_pile):
+        p_hand_pile.extend(p_draw_pile)
+        p_draw_pile.clear()
+    else:
+        for i in range (amount):
+            add = p_draw_pile.pop(0)
+            p_hand_pile.append(add)
+    updated_hand()
+
+def draw(amount):
+    n = len(p_draw_pile)
+    m = len(p_discard_cards) + n
+    if n >= amount:
+        for i in range (amount):
+            add = p_draw_pile.pop(0)
+            p_hand_pile.append(add)
+    else:
+        random.shuffle(p_discard_cards) 
+        print ("discard pile has been emptied")
+        p_draw_pile.extend(p_discard_cards)
+        p_discard_cards.clear()
+        for i in range (min(m,amount)):
+            add = p_draw_pile.pop(0)
+            p_hand_pile.append(add)   
+    updated_hand()
+
+def p_deck ():
+    p_len_deck = len(p_cards)
+    for i in range (0, p_len_deck):
+        print (f"{i+1}: {p_cards[i]}")
+
+def p_card_add (p_card_amount_option, p_cards_amount_added, c, r, v): 
+    for k in range (0, p_cards_amount_added):
+        m = p_card_amount_option - k
+        for i in range (0,m):
+            rarity = random.choices(("common","rare","very_rare"), weights = [c, r, v])[0]
+            if rarity == "common":
+                card = random.choice(p_common_cards)
+                if card in p_extra:
+                    card = random.choice(p_rare_cards)
+            
+            elif rarity == "rare":
+                card = random.choice(p_rare_cards)
+                if card in p_extra:
+                    card = random.choice(p_common_cards)
+
+            elif rarity == "very_rare":
+                card = random.choice(p_very_rare_cards)
+                if card in p_extra:
+                    card = random.choice(p_rare_cards)
+
+            p_extra.append(card)
+
+            print (f"{i+1}: {card}")
+        n = int(input("What card do you want to add?: [0 to skip] "))
+        if n == 0:
+            break
+        else:
+            print (f"{p_extra[n-1]} has been added")
+            card_add = p_extra[n-1]    
+            p_cards.append(card_add)
+               
+        deck_group_update()
+    print ("---------------deck----------------") 
+    p_deck()  
+
+def p_exhaust (amount):
+    for i in range (0, amount):
+        updated_hand()
+
+        n = int(input("What card do you want to exhaust?: "))
+
+        print (f"{p_hand_pile[n-1]} has been exhausted")
+
+        
+        card_exhaust = p_hand_pile[n-1]
+
+        p_hand_pile.remove(card_exhaust)
+        
+        p_exhaust_cards.append(card_exhaust)
+
+def p_discard (amount):
+    for i in range (0, amount):
+        updated_hand()
+
+        n = int(input("What card do you want to discard?: "))
+
+        print (f"{p_hand_pile[n-1]} has been discarded")
+
+        card_discard = p_hand_pile[n-1]
+
+        p_hand_pile.remove(card_discard)
+        
+        p_discard_cards.append(card_discard)
+
+stored_energy =  {"current_round": 0,
+                  "x+1": 0,
+                  "x+2": 0,
+                  "x+3": 0}
+
+stored_block = {"current_round": 0,
+                  "x+1": 0,
+                  "x+2": 0,
+                  "x+3": 0}
+
+def stored_cycle():
+    stored_energy["current_round"] = stored_energy["x+1"]
+    stored_energy["x+1"] = stored_energy["x+2"]
+    stored_energy["x+2"] = stored_energy["x+3"]
+    stored_energy["x+3"] = 0
+    stored_block["current_round"] = stored_block["x+1"]
+    stored_block["x+1"] = stored_block["x+2"]
+    stored_block["x+2"] = stored_block["x+3"]
+    stored_block["x+3"] = 0
+                    
+# def card_processing(played_card):
+#     enemie = game_state.enemie()
+#     played_card_card = played_card - 1
+    
+#     card = p_hand_pile[played_card_card]
+
+#     played_card_function, energy_cost, target = card_functions[card]
+#     if energy_cost > player["energy"]:
+#         print ("insuficient energy")
+#     else:
+#         if not target == "target":
+#             played_card_function(energy_cost)
+#         else:
+#             if enemie["amount"] == 1:
+#                 target = 0
+#             else:
+#                 target = (int(input("who to target? ")) - 1)
+#             played_card_function(energy_cost, target)
+#         if card in p_hand_pile:
+#             p_hand_pile.remove(card)
+#             p_discard_cards.append(card)
+
+def card_processing(card, enemie_target):   
+    played_card_function, energy_cost, target = card_functions[card]
+    if energy_cost > player["energy"]:
+        print ("insuficient energy")
+    else:
+        if not target == "target":
+            played_card_function(energy_cost)
+        else:
+            played_card_function(energy_cost, enemie_target)
+        if card in p_hand_pile:
+            p_hand_pile.remove(card)
+            p_discard_cards.append(card)
+            hand_group_update()
+            enemie_hpbar_update()
+            #player_hpbar_update()
+
+def screen_reset():
+    enemie = game_state.enemie()
+    os.system("cls")
+    show_stats()
+    status_check()
+    enemie_turn_preview (player["roundje"])
+    if enemie["status"] == "alive":
+        updated_hand()
+    if enemie["status"] == "dead":
+        os.system("cls")
+
+def enter():
+    while True:
+        enter = input("press enter to continue")
+        if enter == "":
+            os.system("cls")
+            break
+        elif enter == "relics" or enter == "relic" or enter == "r":
+            relic_pile_show()
+        elif enter == "potions" or enter == "potion" or enter == "p":
+            potion_pile_show()
+        elif enter == "admin":
+            admin_stats()
+#-------------piles------------
+def discard_pile_show():
+    print ("-----------discard_pile-----------")
+    n = len(p_discard_cards)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_discard_cards[i]}")
+
+def exhaust_pile_show():
+    print ("-----------exhaust_pile-----------")
+    n = len(p_exhaust_cards)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_exhaust_cards[i]}")
+
+def draw_pile_show():
+    print ("-----------draw_pile-----------")
+    n = len(p_draw_pile)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_draw_pile[i]}")
+
+def deck_show():
+    print ("-----------deck-----------")
+    n = len(p_cards)
+    for i in range (0, n ):
+        print (f"{i+1}: {p_cards[i]}")
+
+def potion_pile_show():
+    print ("-----------potions-----------")
+    if len(potion_pile) == 0:
+        print ("empty")
+    else:
+        for i in range (len(potion_pile)):
+            print (f"{i+1}: {potion_pile[i]}")
+
+def relic_pile_show():
+    print ("-----------relics-----------")
+    if len(relic_pile) == 0:
+        print ("empty")
+    else:
+        for i in range (len(relic_pile)):
+            print (f"{i+1}: {relic_pile[i]}")
+
+#--------------player_turn--------------
+def player_turn():
+    enemie = game_state.enemie()
+    stored_cycle()
+    player["energy"] = player["total_energy"] + stored_energy["current_round"]
+    player["block"] = stored_block["current_round"]
+    relic_use_turn()
+
+    show_stats()
+    if player["turn"] > 1:
+        draw(5 + player["extra_draw"])
+    else:
+        start_draw()
+
+    while enemie["status"] == "alive" and player["hp"] > 0:
+        played_card = (input("Which card do you want to play? (0 to stop): "))
+        if played_card == "discard" or played_card == "di":
+            discard_pile_show()
+        elif played_card == "exhaust" or played_card == "e":
+            exhaust_pile_show()
+        elif played_card == "draw" or played_card == "d" or played_card == "dr":
+            draw_pile_show()
+        elif played_card == "deck" or played_card == "de":
+            deck_show()
+        elif played_card == "stats" or played_card == "s":
+            battle_stats()
+        elif played_card == "potion" or played_card == "potions" or played_card == "p":
+            potion_pile_show()
+            pick = input("Do you want to play a potion? [y/n] ")
+            if pick == "y":
+                potion_use()
+        elif played_card == "relic" or played_card == "r" or played_card == "relics":
+            relic_pile_show()
+        elif played_card == "q":
+            screen_reset()
+        elif played_card == "test" or played_card == "t":
+            ask = int(input("1 or 2? "))
+            if ask == 1:
+                minion_spawn(1)
+            else:
+                p_normal_attack(500, 0)
+        elif played_card == "admin":
+            admin_stats()
+
+        else:
+            try:
+                played_card_2 = int(played_card)
+            except ValueError:
+                print("incorrect input")
+                played_card_2 = 1000
+            if played_card_2 > len(p_hand_pile):
+                yo = 9 #totaal geen reden
+            elif played_card_2 == 0:
+                show_stats()
+                status_check()
+                if enemie["status"] == "alive":
+                    updated_hand()
+                    print ("--------------------------------------")
+                if enemie["status"] == "dead":
+                    os.system("cls")
+                if player["frail"] > 0:
+                    player["frail"] -= 1
+                if player["vulnerable"] > 0:
+                    player["vulnerable"] -= 1
+                if player["weak"] > 0:
+                    player["weak"] -= 1
+                p_discard_cards.extend(p_hand_pile) 
+                p_hand_pile.clear()
+                break
+            else:
+                card_processing(played_card_2)
+                show_stats()
+                updated_hand()
+
+#----------------card_effects--------------
+# def p_normal_attack(dmg, n):
+#     enemie = game_state.enemie()
+#     vul = 1
+#     weak = 1
+#     #if enemie[n]["vulnerable"] > 0:
+#     if enemie["vulnerable"] > 0:
+#         vul = 3/2
+#     if player["weak"] > 0:
+#         weak = 3/4
+#     total_dmg = round((dmg + player["strength"]) * vul * weak)
+#     if enemie[n]["start_block"] >= total_dmg:
+#         enemie[n]["start_block"] = enemie[n]["start_block"] - total_dmg
+
+#     else:
+#         enemie[n]["enemie_hp"] = enemie[n]["enemie_hp"] + enemie[n]["start_block"]
+#         enemie[n]["start_block"] = 0
+#         enemie[n]["enemie_hp"] = enemie[n]["enemie_hp"] - total_dmg
+#     print (f"{player_name} has done {total_dmg} damage")
+#     stats_game["damage dealt"] += total_dmg
+
+
+def p_normal_attack(dmg, enemie):
+    vul = 1
+    weak = 1
+    if enemie["vulnerable"] > 0:
+        vul = 3/2
+    if player["weak"] > 0:
+        weak = 3/4
+    total_dmg = round((dmg + player["strength"]) * vul * weak)
+    if enemie["start_block"] >= total_dmg:
+        enemie["start_block"] = enemie["start_block"] - total_dmg
+
+    else:
+        enemie["enemie_hp"] = enemie["enemie_hp"] + enemie["start_block"]
+        enemie["start_block"] = 0
+        enemie["enemie_hp"] = enemie["enemie_hp"] - total_dmg
+    print (f"{player_name} has done {total_dmg} damage")
+    stats_game["damage dealt"] += total_dmg
+
+
+def P_normal_multi_attack(dmg,amount, n):
+    enemie = game_state.enemie()
+    vul = 1
+    weak = 1
+    if enemie[n]["vulnerable"] > 0:
+        vul = 3/2
+    if player["weak"] > 0:
+        weak = 3/4
+    total_dmg = round((dmg + player["strength"])* weak * vul) * amount
+    if enemie[n]["start_block"] >= total_dmg:
+        enemie[n]["start_block"] = enemie[n]["start_block"] - total_dmg
+
+    else:
+        enemie[n]["enemie_hp"] = enemie[n]["enemie_hp"] + enemie[n]["start_block"]
+        enemie[n]["start_block"] = 0
+        enemie[n]["enemie_hp"] = enemie[n]["enemie_hp"] - total_dmg
+    print (f"{player_name} has done {(dmg + player["strength"]) * weak * vul} damage {amount} times")
+    stats_game["damage dealt"] += total_dmg
+
+
+#------blocks-----
+def p_normal_block (amount):
+    frail = 1
+    if player["frail"] > 0:
+        frail = 7/10
+    player["block"] = round((player["block"] + amount + player["dex"]) * frail)
+    print (f"{player_name} has blocked {(amount + player['dex']) * frail}")
+
+#-----heal-----
+def p_heal (amount):
+    if player["hp"] + amount < player["max_hp"]:
+        player["hp"] = player["hp"] + amount
+    else:
+        player["hp"] = player["max_hp"]
+
+#-----other-----
+def p_vulnerable (amount, n):
+    enemie = game_state.enemie()
+    enemie[n]["vulnerable"] += amount
+    print (f"{enemie[n]['enemie_name']} has gained {amount} vulnerable")
+    stats_game["debuffs given"] += 1
+
+def p_weak (amount, n):
+    enemie = game_state.enemie()
+    enemie[n]["weak"] += amount
+    show_stats()
+    updated_hand()
+    print (f"{enemie[n]['enemie_name']} has gained {amount} weak")
+    stats_game["debuffs given"] += 1
+
+def give_all_strength(amount):
+    enemie = game_state.enemie()
+    for i in range (enemie["amount"]):
+        enemie[i]["strength"] -= amount
+
+#-----reuse_cards------
+def c_printer():
+    p_hand_pile.append(random.choice(p_cards))
+
+def c_maker():
+    p_total = p_cards + p_rare_cards + p_common_cards + p_very_rare_cards
+    p_hand_pile.append(random.choice(p_total))
+
+def demonate():
+    player["strength"] += 2
+#----------------reuse_cards--------------
+repeat_cards = []
+repeat_cards_options = {"card_printer": c_printer, "card_maker": c_maker, "demonate": demonate, }
+
+def reuse_cards_start_turn():
+    for i in range (len(repeat_cards)):
+        repeat_cards_options[repeat_cards[i]] ()
+
+#----------------cards--------------------
+def strike(e, target):
+    if player["energy"] >= e:
+        p_normal_attack (5, target)
+        player["energy"] = player["energy"] - e
+        enemie_status()
+
+def gimme(e):
+    if player["energy"] >= e:
+        extra_draw (3)
+        player["energy"] = player["energy"] - e
+
+def gamble(e):
+    enemie = game_state.enemie()
+    if player["energy"] >= e:
+        choice = random.choices("attack","block","heal","energie","strength","nothing", weights=[30,30,10,10,10,10])[0]
+        if choice == "attack":
+            n = random.randint(0,16)
+            l = random.randint(1,3)
+            P_normal_multi_attack(n,l)
+        elif choice == "block":
+            n = random.randint(0,17)
+            block(n)
+        elif choice == "heal":
+            n = random.randint(0,7)
+            p_heal(n)
+        elif choice == "energie":
+            n = random.randint(-2,5)
+            if player["energy"] + n >= 0:
+                player["energy"] = player["energy"] + n
+            else:
+                player["energy"] = 0
+        elif choice == "strength":
+            n = random.randint(-5,8)
+            l = random.randint(-5,8)
+            player["round_strength"] = n
+            enemie["round_strength"] = l
+        elif choice == "nothing":
+            print ("this did nothing")
+        player["energy"] = player["energy"] - e
+     
+def slam(e, target):
+    if player["energy"] >= e:
+        p_normal_attack(37, target) 
+        player["energy"] = player["energy"] - e
+        enemie_status()
+
+def empower(e):
+    if player["energy"] >= e:
+        player["strength"] = player["strength"] + 2
+        player["energy"] = player["energy"] - e
+
+def jumble(e, target):
+    if player["energy"] >= e:
+        p_normal_attack(7, target)
+        p_discard(1)
+        player["energy"] = player["energy"] - e
+        enemie_status()
+
+def card_printer(e):
+    if player["energy"] >= e:
+        repeat_cards.append("card_printer")
+
+        player["energy"] = player["energy"] - e
+        p_exhaust_cards.append("card_printer")
+        p_hand_pile.remove("card_printer")
+
+def card_maker(e):
+    if player["energy"] >= e:
+        repeat_cards.append("card_maker")
+        player["energy"] = player["energy"] - e
+        p_exhaust_cards.append("card_maker")
+        p_hand_pile.remove("card_maker")
+
+def ddemonate(e):
+    if player["energy"] >= e:
+        repeat_cards.append("demonate")
+        player["energy"] = player["energy"] - e
+        p_exhaust_cards.append("demonate")
+        p_hand_pile.remove("demonate")
+
+def drain (e):
+    if player["energy"] >= e:
+        player["energy"] = player["energy"] - e
+        give_all_strength(-2)
+#----blocks----
+def block(e):
+    if player["energy"] >= e:
+        p_normal_block (5)
+        player["energy"] = player["energy"] - e
+
+def back_full(e):
+    if player["energy"] >= e:
+        player["block"] = player["max_hp"] - player["hp"]
+        print (f"player blocked { player["max_hp"] - player["hp"]}")
+        player["energy"] = player["energy"] - e
+
+def blockle(e):
+    p_normal_block(4)
+    frail = 1
+    if player["frail"] > 0:
+        frail = 0,7
+    stored_block["x+1"] =+ round(4 * frail)
+    stored_block["x+2"] =+ round(4 * frail)
+    player["energy"] = player["energy"] - e
+
+def baricade(e):
+    player["remove_block"] = "no"
+    player["energy"] = player["energy"] - e
+    p_exhaust_cards.append("baricade")           
+    p_draw_pile.remove("baricade")                                              
+
+#--other
+def energise(e):    #rare
+    stored_energy["x+1"] = player["energy"]
+    stored_energy["x+2"] = player["energy"]
+    player["energy"] = player["energy"] - e
+
+def pillage(e):
+    print ("pillage")
+
+
+
+#def piercing_whale(e):
+    #give_all_strength(-6) #only 1 round
+
+card_functions = {"strike":         (strike,        1,                      "target"),
+                    "block":        (block,         1,                      "ntb"),
+                    "pillage":      (pillage,       2,                      "ntb"),
+                    "gimme":        (gimme ,        1,                      "ntb") ,
+                    "gamble":       (gamble,        random.randint(1,4),    "ntb"),
+                    "slam":         (slam,          3,                      "target"),
+                    "empower":      (empower,       2,                      "ntb"),
+                    "jumble":       (jumble,        1,                      "target"),
+                    "energise":     (energise,      player["energy"],       "ntb"),
+                    "blockle":      (blockle,       2,                      "ntb"), 
+                    "card printer": (card_printer,  1,                      "ntb"), 
+                    "card maker":   (card_printer,  2,                      "ntb"), 
+                    "demonate":     (ddemonate,     3,                      "ntb")}
+
+#-----------------potions--------------------
+potion_pile = []
+potions_common = ["vulnerable", "weakness", "triple_block", "block"]
+potions_rare = ["heal", "go"]
+potions_very_rare = ["to"]
+
+def potion_add (amount, choices):
+    random.shuffle(potions_common)
+    random.shuffle(potions_rare)
+    random.shuffle(potions_very_rare)
+
+    
+    potion_choices = random.choices(["common","rare","very_rare"], weights=[80,20,0], k = choices)
+    for i in range (choices):
+        if potion_choices[i] == "common":
+            potje = potions_common[0]
+            potion_choices[i] = potje
+            potions_common.remove(potje)
+            potions_common.append(potje)
+            
+        elif potion_choices[i] == "rare":
+            potje = potions_rare[0]
+            potion_choices[i] = potje
+            potions_rare.remove(potje)
+            potions_rare.append(potje)
+
+        elif potion_choices[i] == "very_rare":
+            potje = potions_very_rare[0]
+            potion_choices[i] = potje
+            potions_very_rare.remove(potje)
+            potions_very_rare.append(potje)
+            
+
+    for q in range (amount):
+        potion_pile_show()
+        print("-------potion choices-------")
+        left_choices = choices - q
+
+        for i in range (left_choices):
+            print (f"{i+1}: {potion_choices[i]}")
+            
+        n = int(input("What potion do you want to add (0 for skip)"))
+
+        if player["potion_slots"] > len(potion_pile):
+            print (f"added {potion_choices[n-1]}")
+            potion_pile.append(potion_choices[n-1])
+            potion_choices.remove(potion_choices[n-1])
+        
+        else:
+            print (f"added {potion_choices[n-1]}")
+            potion_pile_show()
+            m = int(input("which potion do you want to replace"))
+            print (f"removed {potion_pile[m-1]} ")
+            potion_pile.append(potion_choices [n-1])
+            potion_pile.remove(potion_pile[m-1])
+            potion_choices.remove(potion_choices[n-1])
+
+
+    potion_choices.clear()
+    potion_pile_show()
+
+def potion_add_random():
+    rarity = random.choices(["common","rare","very_rare"], weights=[80,20,0])[0]
+    if rarity == "common":
+        pot = random.choice(potions_common)
+    elif rarity == "rare":
+        pot = random.choice(potions_rare)
+    elif rarity == "very_rare":
+        pot = random.choice(potions_very_rare)
+    if player["potion_slots"] > len(potion_pile):
+        print ("------new potion------")
+        print (pot)
+        potion_pile_show()
+        pick = input("Do you want to take the potion? [y/n]")
+        if pick == "y":
+            potion_pile.append(pot)
+    
+    else:
+        print ("------new potion------")
+        print (pot)
+        potion_pile_show()
+        pick = input("Do you want to replace a potion? [y/n]")
+        if pick == "y":
+            pick_2 = int(input("Which potion do you want to replace?"))
+            print (f"{potion_pile[pick_2 - 1]} has been removed")
+            potion_pile[pick_2 - 1] = pot
+            print (f"{pot} has been added")
+        
+
+
+    potion_pile_show()
+
+def potion_use ():
+    enemie = game_state.enemie()
+    potion_pile_show()
+    pick = int(input("What potion do you want to play? "))
+    function, target = potion_functions[potion_pile[pick - 1]]
+    potion_pile.remove(potion_pile[pick - 1])
+    screen_reset()
+    if not target == "target":
+        function()
+    else:
+        if enemie["amount"] == "1":
+            target = 0
+        else:
+            target = int(input("Who do you want to target? ")) - 1
+        function (target)
+    
+        
+#-----------------potion_functions-----------
+def pot_vulnerable(target):
+    p_vulnerable (3, target)
+
+def pot_weakness(target):
+    p_weak (3, target)
+
+def pot_block():
+    p_normal_block(12)
+
+def pot_triple_block():
+    player["block"] *= 3
+    show_stats()
+
+def pot_heal():
+    p_heal(round(player["max_hp"]/5))
+    show_stats()
+    
+potion_functions = {"vulnerable": (pot_vulnerable, "target"), 
+                    "weakness": (pot_weakness, "target"),
+                    "triple_block": (pot_triple_block, "ntb"),
+                    "block": (pot_block, "ntb"),
+                    "heal": (pot_heal, "ntb")}
+
+#-----------------relics---------------------
+relic_pile = []
+relics_common = ["silent", "cube", "captain's wheel"]
+relics_rare = ["blood vile","ph","ph2"]
+relics_ancient = []
+relic_1 = []
+relic_combat = []
+relic_turn =[]
+
+def relic_normal_add_random():
+    r = 10 + player["roundje"]
+    rarity = random.choices(["common","rare"], weights=[90,r])[0]
+    if relics_common == [] and relics_rare == []:
+        print("you have collected every normal relic")
+    else:
+        if relics_common == []:
+            rel = random.choice(relics_rare)
+        
+        elif relics_rare == []:
+            rel = random.choice(relics_common)
+        else:
+            rarity = random.choices(["common","rare"], weights=[90,r])[0]
+            if rarity == "common":
+                rel = random.choice(relics_common)
+            elif rarity == "rare":
+                rel = random.choice(relics_rare)
+
+        print ("------new relic------")
+        print (rel)
+        relic_pile_show()
+        pick = input("Do you want to take the relic? [y/n]")
+        if pick == "y":
+            relic_pile.append(rel)
+            if rel in relics_common:
+                relics_common.remove(rel)
+            if rel in relics_rare:
+                relics_rare.remove(rel)
+            check_relic_type()
+
+def relic_ancient_add_random():
+    rel = random.choice(relics_ancient)
+    relics_ancient.remove(rel)
+    print ("------new relic------")
+    print (rel)
+    relic_pile_show()
+    pick = input("Do you want to take the relic? [y/n]")
+    if pick == "y":
+        relic_pile.append(rel)
+        check_relic_type()
+    
+def relic_normal_add (choices):
+    random.shuffle(relics_common)
+    random.shuffle(relics_rare)
+    r = 10 + player["roundje"]
+    print ("------relic choices-----")
+    relic_choices = random.choices(["common","rare"], weights=[90,r], k = choices)
+    for i in range (choices):
+        if relic_choices[i] == "common":
+            rel = relics_common[0]
+            relic_choices[i] = rel
+            relics_common.remove(rel)
+            relics_common.append(rel)
+        elif relic_choices[i] == "rare":
+            rel = relics_rare[0]
+            relic_choices[i] = rel
+            relics_rare.remove(rel)
+            relics_common.append(rel)
+        print (f"{i+1}: {rel}")
+    n = int(input("Which relic do you want to add? "))
+    if not n == 0:
+        print (f"added {relic_choices[n-1]}")
+        relic_pile.append(relic_choices[n-1])
+        if relic_choices[n-1] in relics_common:
+            relics_common.remove(relic_choices[n-1])
+        if relic_choices[n-1] in relics_rare:
+            relics_rare.remove(relic_choices[n-1])
+        relic_choices.clear()
+        check_relic_type()
+
+def check_relic_type():
+    function, type = relic_functions[relic_pile[-1]]
+    if type == "1":
+        relic_1.append(relic_pile[-1])
+        function()
+    elif type == "turn":
+        relic_turn.append(relic_pile[-1])
+    elif type == "combat":
+        relic_combat.append(relic_pile[-1])
+
+def relic_use_combat():
+    for i in range (len(relic_combat)):
+        function, _ = relic_functions[relic_combat[i]]
+        function()
+
+def relic_use_turn ():
+    for i in range (len(relic_turn)):
+        function, _ = relic_functions[relic_turn[i]]
+        function()
+
+
+#--------------relic_functions-------------
+#---1 time---
+def rel_silent ():
+    player["extra_start_draw"] += 2
+    print ("silent")
+
+#---combat---
+def rel_blood_vile():
+    if not player["hp"] + 2 > player["max_hp"]:
+        player["hp"] += 2
+    else:
+        player["hp"] = player["max_hp"]
+
+    print ("bloodvile")
+
+#---turn ---
+def rel_cube():
+    if player["turn"] % 3 == 0:
+        player["energy"] += 1
+
+def rel_captains_wheel():
+    if player["turn"] == 2:
+        player["block"] += 14
+
+#----
+relic_functions = {"silent": (rel_silent, "1"), "blood vile": (rel_blood_vile, "combat"),"cube": (rel_cube, "turn"), "captain's wheel": (rel_captains_wheel, "turn") }
+
+#-----------------shop----------------------
+shop_cards = []
+shop_relics = []
+shop_potions = []
+def shop(cards, relics, potions):
+    shop_cards.clear()
+    shop_relics.clear()
+    shop_potions.clear()
+    random.shuffle(p_very_rare_cards)
+    random.shuffle(p_rare_cards)
+    random.shuffle(p_common_cards)
+    random.shuffle(relics_common)
+    random.shuffle(relics_rare)
+    random.shuffle(relics_ancient)
+    random.shuffle(potions_common)
+    random.shuffle(potions_rare)
+    random.shuffle(potions_very_rare)
+    for i in range (cards):
+        card = random.choices(["common","rare", "very_rare"], weights=[80,20,0])[0]
+        if card == "common":
+            add = p_common_cards.pop(0)
+            p_common_cards.append(add)
+            price = random.randint(40, 100)
+        elif card == "rare":
+            add = p_rare_cards.pop(0)
+            p_rare_cards.append(add)
+            price = random.randint(80, 110)
+        elif card == "very_rare":
+            add = p_very_rare_cards.pop(0)
+            p_very_rare_cards.append(add)
+            price = random.randint(110, 130)
+        item = {"item": add,
+               "price": price}
+        shop_cards.append(item)
+    for i in range (relics):
+        relic = random.choices(["common","rare", "ancient"], weights=[70,30,0])[0]
+        if relic == "common":
+            add = relics_common.pop(0)
+            relics_common.append(add)
+            price = random.randint(150,200)
+        elif relic == "rare":
+            add = relics_rare.pop(0)
+            relics_rare.append(add)
+            price = random.randint(170,210)
+        elif relic == "ancient":
+            add = relics_ancient.pop(0)
+            relics_ancient.append(add)
+            price = random.randint(200,250)
+        item = {"item": add,
+               "price": price}
+        shop_relics.append(item)
+    for i in range (potions):
+        potion = random.choices(["common","rare", "ancient"], weights=[70,30,0])[0]
+        if potion == "common":
+            add = potions_common.pop(0)
+            potions_common.append(add)
+            price = random.randint(25,45)
+        elif potion == "rare":
+            add = potions_rare.pop(0)
+            potions_rare.append(add)
+            price = random.randint(35,55)
+        elif potion == "very_rare":
+            add = potions_very_rare.pop(0)
+            potions_very_rare.append(add)
+            price = random.randint(45,65)
+        item = {"item": add,
+               "price": price}
+        shop_potions.append(item)
+
+    shop_show(cards, relics, potions)
+    while True:
+        pre_choice = int(input("What do you want to buy? [0 to skip] "))
+        choice = pre_choice - 1
+        if choice == -1:
+            break
+        elif 0 <= choice < cards:
+            if player["gold"] >= shop_cards[choice]["price"]:
+                add = shop_cards[choice]["item"]
+                p_cards.append(add)
+                player["gold"] -= shop_cards[choice]["price"]
+                print (f"bought {shop_cards[choice]["item"]}")
+                stats_game["gold spent"] += shop_cards[choice]["price"]
+                shop_cards[choice] = "empty"
+            else:
+                print ("insuficient funds")
+        elif cards + relics > choice >= cards:
+            n = choice - cards
+            if player["gold"] >= shop_relics[n]["price"]:
+                add = shop_relics[n]["item"]
+                player["gold"] -= shop_relics[n]["price"]
+                relic_pile.append(add)
+                if add in relics_common:
+                    relics_common.remove(add)
+                if add in relics_rare:
+                    relics_rare.remove(add)                
+                if add in relics_ancient:
+                    relics_ancient.remove(add)
+                print (f"bought {shop_relics[n]["item"]}")
+                stats_game["gold spent"] += shop_cards[n]["price"]
+                shop_relics[n] = "empty"
+
+            else:
+                print ("insuficient funds")
+        elif cards + relics + potions > choice >= cards + relics:
+            n = choice - cards - relics
+            if player["gold"] >= shop_potions[n]["price"]:
+                player["gold"] -= shop_potions[n]["price"]
+                add = shop_potions[n]["item"]
+                potion_pile.append(add)
+                print (f"bought {shop_potions[n]["item"]}")
+                stats_game["gold spent"] += shop_potions[n]["price"]
+                shop_potions[n] = "empty"
+            else:
+                print ("insuficient funds")
+        time.sleep(0.6)
+        shop_show(cards, relics, potions)
+
+def shop_show(cards, relics, potions):
+    os.system("cls")
+    print(f"{"--------------------SHOP--------------------":^116}")
+    n = 32
+    m = 10
+    print(f"{"-----cards-----":^{n}}{"":<{m}}{"-----relics-----":^{n}}{"":<{m}}{"-----potions-----":^{n}}")
+    for i in range(max(cards,relics,potions)):
+        if i + 1 <= cards and not shop_cards[i] == "empty":
+            card_fun = f"{i+ 1}: {shop_cards[i]["item"]} ({shop_cards[i]["price"]})"
+            card_dash = "--------------------------------"
+            card_strip = "|"
+            c = n - 2
+        else:
+            card_fun = ""
+            card_dash = ""
+            card_strip = ""
+            c = n
+        if i + 1 <= relics and not shop_relics[i] == "empty":
+            relic_fun = f"{i + cards + 1}: {shop_relics[i]["item"]} ({shop_relics[i]["price"]})"
+            relic_dash = "--------------------------------"
+            relic_strip = "|"
+            r = n - 2
+        else:
+            relic_fun = ""
+            relic_dash = ""
+            relic_strip = ""
+            r = n
+        if i + 1 <= potions and not shop_potions[i] == "empty":
+            potion_fun = f"{i + cards + relics + 1}: {shop_potions[i]["item"]} ({shop_potions[i]["price"]})"
+            potion_dash = "--------------------------------"
+            potion_strip = "|"
+            p = n - 2
+        else:
+            potion_fun = ""
+            potion_dash = ""
+            potion_strip = ""
+            p = 2
+
+        print(f"{card_dash:<{n}}{"":<{m}}{relic_dash:<{n}}{"":<{m}}{potion_dash:<{n}}")
+        print(f"{card_strip}{card_fun:^{c}}{card_strip}{"":<{m}}{relic_strip}{relic_fun:^{r}}{relic_strip}{"":<{m}}{potion_strip}{potion_fun:^{p}}{potion_strip}")
+        print(f"{card_dash:<{n}}{"":<{m}}{relic_dash:<{n}}{"":<{m}}{potion_dash:<{n}}")
+    print(f"gold: {player["gold"]}")
+    print(stats_game["gold spent"])
+
+#-----------------enemie_cards---------------
+def normal_attack (dmg, amount, roundje, preview):
+    enemie = game_state.enemie()
+    n = random_stats["current_enemie"]
+    vul = 1
+    weak = 1
+    if player["vulnerable"] > 0:
+        vul = 1,5
+    if enemie[n]["weak"] > 0:
+        weak = 0.75
+    total_dmg =  round((dmg + roundje * r * amount + enemie[n]["strength"]) * vul * weak)
+    if preview == "no":
+        if player["block"] >= total_dmg:
+            player["block"] = player["block"] - total_dmg
+            
+        else:
+            player["hp"] = player["hp"] + player["block"]
+            player["hp"] = round(player["hp"] - total_dmg)
+            player["block"] = 0
+                                
+        print (f"{enemie[n]['enemie_name']} dealt {total_dmg} dmg")
+    elif preview == "yes":
+        print (f"{enemie[n]["enemie_name"]} will do {total_dmg} dmg")
+
+def normal_multi_attack (dmg, amount, roundje, preview):
+    enemie = game_state.enemie()
+    n = random_stats["current_enemie"]
+    vul = 1
+    weak = 1
+    if player["vulnerable"] > 0:
+        vul = 1,5
+    if enemie[n]["weak"] > 0:
+        weak = 0.75
+    total_dmg = round((enemie[n]["strength"] + dmg + roundje * r) * vul * weak)
+    if preview == "no":
+        if player["block"] >= total_dmg * amount:
+            player["block"] = round(player["block"] - (total_dmg * amount))
+    
+        else:
+            player["hp"] = player["hp"] + player["block"]
+            player["hp"] = round(player["hp"] - (total_dmg * amount))
+
+        print (f"{enemie[n]['enemie_name']} dealt {round(total_dmg)} dmg {amount} times.")
+    elif preview == "yes":
+        print (f"{enemie[n]["enemie_name"]} will do {total_dmg} dmg {amount} time")
+
+def normal_attack_blockless(dmg, amount, roundje, preview):
+    enemie = game_state.enemie()
+    n = random_stats["current_enemie"]
+    if preview == "no":
+        player["hp"] -= dmg                                
+        print (f"{enemie[n]['enemie_name']} dealt {dmg} unblockable dmg")
+    elif preview == "yes":
+        print (f"{enemie[n]["enemie_name"]} will do {dmg} unblockable dmg")
+
+def normal_attack_no_attributes(dmg, amount, roundje, preview):
+    enemie = game_state.enemie()
+    n = random_stats["current_enemie"]
+    if preview == "no":
+        if player["block"] >= dmg:
+            player["block"] = player["block"] - dmg
+            
+        else:
+            player["hp"] = player["hp"] + player["block"]
+            player["hp"] = round(player["hp"] - dmg)
+            player["block"] = 0
+                                
+        print (f"{enemie[n]['enemie_name']} dealt {dmg} dmg")
+    elif preview == "yes":
+        print (f"{enemie[n]["enemie_name"]} will do {dmg} dmg")
+
+def unblocked_attack_give_strength(dmg, amount, roundje, preview):
+    enemie = game_state.enemie()
+    n = random_stats["current_enemie"]
+    vul = 1
+    weak = 1
+    if player["vulnerable"] > 0:
+        vul = 1,5
+    if enemie[n]["weak"] > 0:
+        weak = 0.75
+    total_dmg =  round((dmg + roundje * r * amount + enemie[n]["strength"]) * vul * weak)
+    if preview == "no":
+        if player["block"] >= total_dmg:
+            player["block"] = player["block"] - total_dmg
+            
+        else:
+            player["hp"] = player["hp"] + player["block"]
+            player["hp"] = round(player["hp"] - total_dmg)
+            player["block"] = 0
+            enemie[n]["strength"] += 3
+                                
+        print (f"{enemie[n]['enemie_name']} dealt {total_dmg} dmg")
+        print (f"{enemie[n]['enemie_name']} gained 3 strength")
+    
+    elif preview == "yes":
+        print (f"{enemie[n]["enemie_name"]} will do {total_dmg} dmg")
+    
+def normal_block (block ,roundje): 
+    enemie = game_state.enemie()
+    n = random_stats["current_enemie"]
+    frail = 1
+    if enemie[n]["frail"] > 0:
+        frail = 0.75
+    total_block = round((block + enemie[n]["dex"] + roundje)* r * frail)
+    enemie[n]["start_block"] = round(enemie[n]["start_block"] + total_block)
+    print (f"{enemie[n]['enemie_name']} gained {total_block} block")
+
+#----------------enemie_specials----------------
+def extra_strength (amount):
+    enemie = game_state.enemie()
+    enemie[0]["strength"] += amount 
+
+def kokkie (l):
+    enemie = game_state.enemie()
+    if enemie[0]["status"] == "dead":
+        enemie[1]["card_types"] = "attack"
+
+def peppie(l):
+    enemie = game_state.enemie()
+    enemie[0]["strength"] += 2
+
+def forgotten_knight (l):
+    enemie = game_state.enemie()
+    n = random_stats["current_enemie"]
+    if player["turn"]%6 == 0:
+        enemie[n]["strength"] += 5
+    else:
+        print (f"{enemie[n]["enemie_name"]} is gaining 5 strength in {6 - player["turn"]%6}")
+
+
+#----------------enemie_debufs------------------
+def e_weak (amount):
+    player["weak"] += amount
+    print (f"{player_name} has received {amount} weak")
+
+def e_frail (amount):
+    player["frail"] += amount
+    print (f"{player["name"]} has received {amount} frail")
+#-----------------minions-------------------
+def minion_spawn(amount):
+    enemie = game_state.enemie()
+    for i in range (amount):
+        row, function = enemie["minion"]
+        if not row == []:
+            add = random.choice(row)
+            minion_add = function[add](player["roundje"])
+            row.remove(add)
+            enemie[enemie["amount"]] = minion_add
+            enemie["amount"] += 1
+            print (f"{enemie["enemie_name"]} summoned {minion_add["enemie_name"]}")
+
+def leader_check():
+    enemie = game_state.enemie()
+    for i in range (enemie["amount"]):
+        if enemie[i]["minion"] == "leader" and enemie[i]["status"] == "dead":
+            for j in range (enemie["amount"]):
+                if not enemie[j]["minion"] == "leader" and not enemie[j]["status"] == "dead":
+                    #enemie[j]["status"] = "dead"
+                    enemie[j]["enemie_hp"] = 0
+                    print (f"{enemie[j]["enemie_name"]} has fled")
+            enemie["status"] = "dead"
+
+def status_check ():
+    enemie = game_state.enemie()
+    if "minion" in enemie:
+        leader_check()
+    else:
+        dead = 0
+        for i in range (enemie["amount"]):  
+            if enemie[i]["enemie_hp"] <= 0 and enemie[i]["status"] == "alive":
+                enemie[i]["status"] = "dead"
+                print (f"{enemie["enemie_name"]} has died")
+        for i in range (enemie["amount"]):
+             if enemie[i]["status"] == "dead":
+                 dead += 1
+        if dead == enemie["amount"]:
+            enemie["status"] = "dead"
+
+def minion_flee ():
+    enemie = game_state.enemie()
+    for j in range (enemie["amount"]):
+        if not enemie[j]["minion"] == "leader" and not enemie[j]["status"] == "dead":
+            print (f"{enemie[j]["enemie_name"]} has fled")
+            enemie[j]["status"] = "dead"
+#-----------------enemies-------------------
+def gerald_the_vast(roundje):
+    return {"amount": 1,
+            "type": "normal",
+            "status": "alive",
+            "enemie_name":"gerald the vast",
+            "current": 0,
+            0:{"enemie_name":"gerald the vast",
+               "status": "alive",
+                "max_hp": 40 + roundje * 4 * r,
+                "enemie_hp": 40 + roundje * 4 * r,
+                "strength": 0,
+                "dex": 0,
+                "start_block": 0,
+                "remove_block": "yes",
+                "vulnerable": 0,
+                "weak": 0,
+                "frail": 0,
+                "card_types": random.choices(e_card_types, weights=[80,20,0,0])[0],
+                "attack": {1: (normal_attack, 12, 1),
+                        2: (normal_multi_attack, 6, 3)},
+                "block": {1: (normal_block, 12),
+                        2: (normal_block, 20)},
+                "special": 0,
+                "debuff": 0}}
+
+def gerald_the_least (roundje):
+    return {"amount": 1,
+            "type": "normal", 
+            "status": "alive",
+            "enemie_name":"gerald the least",
+            0: {"enemie_name":"gerald the least",
+                "status": "alive",
+                "max_hp": 30 + roundje * 3 * r,
+                "enemie_hp": 30 + roundje * 3 * r,
+                "start_block": 0,
+                "strength": 0,
+                "dex": 0,
+                "remove_block": "yes",
+                "vulnerable": 0,
+                "weak": 0,
+                "frail": 0,
+                "card_types": random.choices(e_card_types, weights=[100,0,0,0])[0],
+                "attack":{ 1: (normal_multi_attack, 5, 3),
+                        2: (normal_attack, 22, 1)},
+                "special": 0}}
+
+def sparrow (roundje):
+    return {"amount": 1,
+            "type": "normal", 
+            "status": "alive",
+            "enemie_name":"sparrow",
+            0: {"enemie_name":"sparrow",
+                "status": "alive",
+                "max_hp": 50 + roundje * 4 * r,
+                "enemie_hp": 50 + roundje * 4 * r,
+                "start_block": 0,
+                "strength": 0,
+                "dex": 0,
+                "remove_block": "yes",
+                "vulnerable": 0,
+                "weak": 0,
+                "frail": 0,
+                "card_types": random.choices(e_card_types, weights=[100,0,0,0])[0],
+                "attack":{ 1: (normal_attack, 5, 1),
+                        2: (normal_attack, 5, 1)},
+                "special": (extra_strength, 3)}}
+
+def peppie_en_kokkie(roundje):
+    return {"amount": 2,
+                "type": "normal", 
+                "status": "alive",
+                "enemie_name":"Peppie en Kokkie",
+                1: {"enemie_name":"Peppie",
+                    "status": "alive",
+                    "max_hp": 42 + roundje * 3 * r,
+                    "enemie_hp": 42 + roundje * 3 * r,
+                    "start_block": 0,
+                    "strength": 0,
+                    "dex": 0,
+                    "remove_block": "yes",
+                    "vulnerable": 0,
+                    "weak": 0,
+                    "frail": 0,
+                    "card_types": "block",
+                    "attack":{1: (normal_attack, 14, 1),
+                              2: (normal_attack, 14, 1)},
+                    "block":{1: (normal_block, 13),
+                             2: (normal_block, 14)},
+                    "special": (peppie, 0)},
+                0: {"enemie_name":"Kokkie",
+                    "status": "alive",
+                    "max_hp": 38 + roundje * 4 * r,
+                    "enemie_hp": 38 + roundje * 4 * r,
+                    "start_block": 0,
+                    "strength": 0,
+                    "dex": 0,
+                    "remove_block": "yes",
+                    "vulnerable": 0,
+                    "weak": 0,
+                    "frail": 0,
+                    "card_types": "attack",
+                    "attack":{ 1: (normal_multi_attack, 4, 2),
+                            2: (normal_attack, 8, 1)},
+                    "special": (kokkie, 0)}}
+
+
+enemie_functions = {1:gerald_the_vast, 2:gerald_the_least, 3:sparrow, 4:peppie_en_kokkie}
+
+# stored = {0:{"card": 1},
+#           1:{"card": 1},
+#           2:{"card": 1},
+#           3:{"card": 1},
+#           4:{"card": 1},
+#           5:{"card": 1},
+#           6:{"card": 1},
+#           7:{"card": 1},
+#           8:{"card": 1},
+#           9:{"card": 1}}
+#-----------------elites---------------------
+def grand_sparrow(roundje):
+    sequence = ["attack","attack","debuff"]
+    return {"amount": 1,
+            "type": "elite",
+            "status": "alive",
+            "enemie_name":"grand sparrow",
+            0: {"enemie_name":"grand sparrow",
+                "status": "alive",
+                "max_hp": 70 + roundje * 5 * r,
+                "enemie_hp": 70 + roundje * 5 * r,
+                "strength": 0,
+                "dex": 0,
+                "start_block": 0,
+                "remove_block": "yes",
+                "vulnerable": 0,
+                "weak": 0,
+                "frail": 0,
+                "card_types": sequence[player["turn"]%3 - 1],
+                "attack": {1: (normal_attack, 6, 1),
+                            2: (normal_attack, 6, 1)},
+                "block": {1: (normal_block, 12),
+                            2: (normal_block, 4)},
+                "special": (extra_strength, 6),
+                "debuff": {1: (e_frail, 1),
+                            2: (e_weak, 1)}}}
+
+def rolrat(roundje):
+    sequence = ["attack","debuff","attack","block","attack","attack","debuff","attack"]
+    return {"amount": 1,
+            "type": "elite",
+            "status": "alive",
+            "enemie_name": "rolrat",
+            0: {"enemie_name": "rolrat",
+                "status": "alive",
+                "max_hp": 80 + 8 * roundje * r,
+                "enemie_hp": 80 + 8 * roundje * r,
+                "strength": 0,
+                "dex": 0,
+                "start_block": 0,
+                "remove_block": "no",
+                "vulnerable": 0,
+                "weak": 0,
+                "frail": 0,
+                "card_types": sequence[(player["turn"]%8) - 1],
+                "attack": {1: (normal_attack, 12, 1),
+                            2: (normal_multi_attack, 6, 3)},
+                "block": {1: (normal_block, 78),
+                            2: (normal_block, 93)},
+                "special": 0,
+                "debuff": {1: (e_frail, 2),
+                        2: (e_weak, 2)}}}
+
+def royal_knights(roundje):
+    sequence_0 = ["attack","attack","block"]
+    sequence_1 = ["block","attack","debuff","attack"]
+    lil_seq = random.choices(["attack","block"], weights = [60,40], k=6)
+    sequence_2 = [lil_seq, "attack"]
+    return {"amount": 3,
+                "type": "elite",
+                "status": "alive",
+                "enemie_name": "royal knights",
+                0: {"enemie_name": "dark knight",
+                    "status": "alive",
+                    "max_hp": 63 + 4 * roundje * r,
+                    "enemie_hp": 60 + 4 * roundje * r,
+                    "strength": 0,
+                    "dex": 0,
+                    "start_block": 0,
+                    "remove_block": "no",
+                    "vulnerable": 0,
+                    "weak": 0,
+                    "frail": 0,
+                    "card_types": sequence_0[(player["turn"]%3) - 1],
+                    "attack": {1: (unblocked_attack_give_strength, 12, 1),
+                                2: (unblocked_attack_give_strength, 12, 1)},
+                    "block": {1: (normal_block, 78),
+                                2: (normal_block, 93)},
+                    "special": 0,},
+                1: {"enemie_name": "ghost knight",
+                    "status": "alive",
+                    "max_hp": 48 + 4 * roundje * r,
+                    "enemie_hp": 54 + 4 * roundje * r,
+                    "strength": 0,
+                    "dex": 0,
+                    "start_block": 0,
+                    "remove_block": "yes",
+                    "vulnerable": 0,
+                    "weak": 0,
+                    "frail": 0,
+                    "card_types": sequence_1[(player["turn"]%4) - 1],
+                    "attack": {1: (normal_attack, 12, 1),
+                                2: (normal_multi_attack, 6, 3)},
+                    "block": {1: (normal_block, 20),
+                                2: (normal_block, 17)},
+                    "special": 0,
+                    "debuff": {1: (e_frail, 2),
+                            2: (e_weak, 2)}},
+                2: {"enemie_name": "forgotten knight",
+                    "status": "alive",
+                    "max_hp": 52 + 4 * roundje * r,
+                    "enemie_hp": 52 + 4 * roundje * r,
+                    "strength": 0,
+                    "dex": 0,
+                    "start_block": 0,
+                    "remove_block": "yes",
+                    "vulnerable": 0,
+                    "weak": 0,
+                    "frail": 0,
+                    "card_types": sequence_2[(player["turn"]%7) - 1],
+                    "attack": {1: (normal_attack, 2, 4),
+                                2: (normal_multi_attack, 1, 7)},
+                    "block": {1: (normal_block, 12),
+                                2: (normal_block, 13)},
+                    "special": (forgotten_knight, 0),}}
+
+def lil_gremlins():
+    print ("to")
+elite_enemie_functions = {1: grand_sparrow, 2: rolrat, 3: royal_knights}
+
+#-----------------bosses--------------------
+#--- act 1 ---
+def gremlin(roundje): #wss boss later
+    sequence = ["attack","attack","debuff"]
+    return {"amount": 1,
+            "status": "alive",
+            "type": "boss",
+            "enemie_name": "elder gremlin",
+            "minion": (gremlins, gremlin_functions),
+            "angsty_position": "tbd",
+            0: {"enemie_name":"elder gremlin",
+                "status": "alive",
+                "minion": "leader",
+                "max_hp": 312 + roundje * 4 * r,
+                "enemie_hp": 312 + roundje * 4 * r,
+                "gremlin_strength": 0,
+                "strength": 0,
+                "dex": 0,
+                "start_block": 0,
+                "remove_block": "yes",
+                "vulnerable": 0,
+                "weak": 0,
+                "frail": 0,
+                "card_types": sequence[player["turn"]%3 - 1],
+                "attack": {1: (normal_attack, 6, 1),
+                        2: (normal_attack, 6, 1)},
+                "block": {1: (normal_block, 12),
+                        2: (normal_block, 4)},
+                "special": (gremlin_spawn, 0),
+                "debuff": {1: (e_frail, 1),
+                        2: (e_weak, 1)}}}
+
+def angsty_gremlin_minion(roundje):
+    return {"enemie_name":"angsty gremlin",
+            "status": "alive",
+            "minion": "minion",
+            "max_hp": 28 + roundje * 2 * r,
+            "enemie_hp": 28 + roundje * 2 * r,
+            "gremlin_strength": 0,
+            "strength": 0,
+            "dex": 0,
+            "start_block": 0,
+            "remove_block": "yes",
+            "vulnerable": 0,
+            "weak": 0,
+            "frail": 0,
+            "card_types": "block",
+            "block": {1: (normal_block, random.randint(12,22)),
+                      2: (normal_block, random.randint(15,30))},
+            "special": (gremlin_power, 0)} #when dead the strength leaves
+
+def thiefing_gremlin_minion(roundje):
+    return {"enemie_name":"thiefing gremlin",
+            "status": "alive",
+            "minion": "minion",
+            "max_hp": 31 + roundje * 3 * r,
+            "enemie_hp": 31 + roundje * 3 * r,
+            "gremlin_strength": 0,
+            "strength": 0,
+            "dex": 0,
+            "start_block": 0,
+            "remove_block": "yes",
+            "vulnerable": 0,
+            "weak": 0,
+            "frail": 0,
+            "card_types": random.choices(e_card_types, weights=[70,30,0,0])[0],
+            "attack": {1: (normal_attack, 8, 1),
+                       2: (normal_multi_attack, 3, 2)},
+            "block": {1: (normal_block, random.randint(12,17)),
+                      2: (normal_block, random.randint(13,18))},
+            "special": (money_steal, 10)}  # every dmg 1 gold
+
+def destructive_gremlin_minion(roundje):
+    return {"enemie_name":"destructive gremlin",
+            "status": "alive",
+            "minion": "minion",
+            "max_hp": 30 + roundje * 3 * r,
+            "enemie_hp": 30 + roundje * 3 * r,
+            "gremlin_strength": 0,
+            "strength": 0,
+            "dex": 0,
+            "start_block": 0,
+            "remove_block": "yes",
+            "vulnerable": 0,
+            "weak": 0,
+            "frail": 0,
+            "card_types": random.choices(e_card_types, weights=[70,0,0,0])[0],
+            "attack": {1: (normal_attack, 2, 3),
+                       2: (normal_multi_attack, 3, 2)},
+            "special": (gremlin_bomb, 5)} 
+
+def vitalist_gremlin_minion(roundje):
+    sequence_v = ["attack","attack","block","attack","debuff"]
+    return {"enemie_name":"vitalist gremlin",
+            "status": "alive",
+            "minion": "minion",
+            "max_hp": 34 + roundje * 2 * r,
+            "enemie_hp": 34 + roundje * 2 * r,
+            "gremlin_strength": 0,
+            "strength": 0,
+            "dex": 0,
+            "start_block": 0,
+            "remove_block": "yes",
+            "vulnerable": 0,
+            "weak": 0,
+            "frail": 0,
+            "card_types": sequence_v[player["turn"]%5 - 1],
+            "attack": {1: (normal_attack, 12, 1),
+                       2: (normal_multi_attack, 5, 2)},
+            "block": {1: (normal_block, random.randint(20,26)),
+                      2: (normal_block, random.randint(17,19))},
+            "special": (enemie_heal, 10),
+            "debuff": {1: (e_weak, 1),
+                       2: (e_frail, 1)}}
+
+
+gremlins = ["angsty_gremlin_minion", "thiefing_gremlin_minion", "destructive_gremlin_minion", "vitalist_gremlin_minion"]
+gremlin_minions_access =[]
+gremlin_functions = {"angsty_gremlin_minion": angsty_gremlin_minion, "thiefing_gremlin_minion": thiefing_gremlin_minion, "destructive_gremlin_minion": destructive_gremlin_minion, "vitalist_gremlin_minion": vitalist_gremlin_minion}
+
+boss_functions = {1: gremlin}
+#----------gremlin specials---------
+def gremlin_spawn(l):
+    enemie = game_state.enemie()
+    n = random_stats["current_enemie"]
+    if enemie[n]["max_hp"] - enemie[n]["enemie_hp"] > 100 + 100 * random_stats["gremlin_boss_hp_counter"]:
+        minion_spawn(1)
+        random_stats["gremlin_boss_hp_counter"] += 1
+    if not enemie["angsty_position"] == "tbd" and enemie[enemie["angsty_position"]]["status"] == "dead" and not enemie[i]["gremlin_strength"] == 0:
+        for i in range (enemie["amount"]):
+            enemie[i]["strength"] -= enemie[i]["gremlin_strength"]
+            enemie[i]["gremlin_strength"] = 0
+    
+
+def gremlin_power(l):
+    enemie = game_state.enemie()
+    for i in range (enemie["amount"]):
+        enemie[i]["strength"] += 1
+        enemie[i]["gremlin_strength"] += 1
+    enemie["angsty_position"] = random_stats["current_enemie"]
+    print ("angsty gremlin has given his allies 1 strength")
+
+def money_steal(amount):
+    player["gold"] -= amount
+
+def gremlin_bomb(amount):
+    random_stats["bomb_dmg"] += 3
+    normal_attack_no_attributes(random_stats["bomb_dmg"], 1, 1, "no")
+
+def enemie_heal(amount):
+    enemie = game_state.enemie()
+    n = random_stats['current_enemie']
+    for i in range (enemie["amount"]):
+        if enemie[i]["enemie_hp"] + amount >= enemie[i]["max_hp"]:
+            enemie[i]["enemie_hp"] = enemie[i]["max_hp"]
+        else:
+            enemie[i]["enemie_hp"] += amount
+    print (f"{enemie[n]["enemie_name"]} has healed his allies")
+
+#-----------------stats_preview-------------
+def show_stats ():
+    enemie = game_state.enemie()
+    if player["hp"] < 0:
+        player["hp"] = 0
+    if player["block"] == 0:
+        print (f"{player_name}: {player["hp"]} hp")
+    else:
+        print (f"{player_name}: {player["hp"]} hp + {player['block']} block")
+    for i in range (enemie["amount"]):
+        if enemie[i]["enemie_hp"] <= 0:
+            enemie[i]["enemie_hp"] = 0
+            enemie[i]["status"] = "dead"
+        if enemie[i]["start_block"] == 0:
+            print (f"{i+1}. {enemie[i]['enemie_name']}: {enemie[i]['enemie_hp']} hp")
+        else:
+            print (f"{enemie[i]['enemie_name']}: {enemie[i]['enemie_hp']} hp + {enemie[i]["start_block"]} block")
+
+def battle_stats():
+    enemie = game_state.enemie()
+    print ("---------general stats---------")
+    print (f"turn: {player["turn"]}")
+    print (f"gold: {player["gold"]}")
+
+    print ("---------player stats---------")
+    print (f"hp: {player['hp']}/{player['max_hp']}")
+    print (f"strength: {player['strength']}")
+    print (f"dex: {player['dex']}")
+    print (f"vulnerable: {player['vulnerable']}")
+    print (f"weak: {player['weak']}")
+    print (f"frail: {player['frail']}")
+    if player["remove_block"] == "no":
+        print ("remove block: no")
+    
+    print ("---------enemie stats---------")
+    for i in range (enemie["amount"]):
+        print (f"---------{enemie[i]["enemie_name"]}---------")
+        print (f"hp: {enemie[i]['enemie_hp']}/{enemie[i]['max_hp']}")
+        print (f"strength: {enemie[i]['strength']}")
+        print (f"dex: {enemie[i]['dex']}")
+        print (f"vulnerable: {enemie[i]['vulnerable']}")
+        print (f"weak: {enemie[i]['weak']}")
+        print (f"frail: {enemie[i]['frail']}")
+        if enemie[i]["remove_block"] == "no":
+            print ("remove block: no")
+    print ("-------------------------------")
+
+def admin_stats():
+    print (f"potion_chance: {player["potion_chance"]}")
+
+game_stats_list = ["enemies killed","elites killed","damage dealt","debuffs given","gold spent"]
+
+stats_game = {"enemies killed": 0,
+              "elites killed": 0,
+              "damage dealt": 0,
+              "debuffs given": 0,
+              "gold spent": 0,}
+
+def game_stats():
+    n = 20
+    print (f"{"-------game_stats-------":^{2 * n}}")
+    for i in range (len(game_stats_list)):
+        print (f"{game_stats_list[i]:<{n}}{stats_game[game_stats_list[i]]:<{n}}")
+#----------------enemie_turn-------------
+# def enemie_turn_preview (roundje):
+#     enemie = game_state.enemie()
+#     random_stats["current_enemie"] = 0
+#     for i in range (enemie["amount"]):
+#         n = random_stats["current_enemie"]
+#         if enemie[n]["status"] == "alive":
+#             if enemie[n]['card_types'] == "attack":
+#                 attack_function, dmg, amount = enemie[n]["attack"][stored[n]["card"]]
+#                 attack_function (dmg, amount, roundje, "yes")
+
+#             elif enemie[n]["card_types"] == "block":
+#                 print (f"{enemie[n]["enemie_name"]} is blocking next turn")
+
+#             elif enemie[n]["card_types"] == "debuff":
+#                 print (f"{enemie[n]["enemie_name"]} is debuffing next turn")
+
+#             if not enemie[n]["special"] == 0:
+#                 print   (f"{enemie[n]["enemie_name"]} is buffing next turn")
+#         random_stats["current_enemie"] = (n + 1) % enemie["amount"]
+
+# def enemie_turn_preview (roundje):
+#     enemie = game_state.enemie()
+#     random_stats["current_enemie"] = 0
+#     for i in range (enemie["amount"]):
+#         n = random_stats["current_enemie"]
+#         if enemie[n]["status"] == "alive":
+#             if enemie[n]['card_types'] == "attack":
+#                 attack_function, dmg, amount = enemie[n]["attack"][stored[n]["card"]]
+#                 attack_function (dmg, amount, roundje, "yes")
+
+#             elif enemie[n]["card_types"] == "block":
+#                 print (f"{enemie[n]["enemie_name"]} is blocking next turn")
+
+#             elif enemie[n]["card_types"] == "debuff":
+#                 print (f"{enemie[n]["enemie_name"]} is debuffing next turn")
+
+#             if not enemie[n]["special"] == 0:
+#                 print   (f"{enemie[n]["enemie_name"]} is buffing next turn")
+#         random_stats["current_enemie"] = (n + 1) % enemie["amount"]
+
+def enemie_turn (roundje):
+    enemie = game_state.enemie()
+    random_stats["current_enemie"] = 0
+    for i in range (enemie["amount"]):
+        n = random_stats["current_enemie"]
+        if enemie[n]["status"] == "alive":
+            if enemie[n]['card_types'] == "attack":
+                attack_function, dmg, amount = enemie[n]["attack"][stored[n]["card"]]
+                attack_function(dmg, amount, roundje, "no")
+
+            elif enemie[n]["card_types"] == "block":
+                block_function, block = enemie[n]["block"][stored[n]["card"]]
+                block_function(block, roundje)
+
+            elif enemie[n]["card_types"] == "debuff":
+                debuff_function, amount = enemie[n]["debuff"][stored[n]["card"]]
+                debuff_function(amount)
+
+            if not enemie[n]["special"] == 0:
+                special_function, x = enemie[n]["special"]
+                special_function (x)
+            else:
+                print ("need to add new type")
+            
+            if enemie[n]["frail"] > 0:
+                enemie[n]["frail"] -= 1
+            if enemie[n]["vulnerable"] > 0:
+                enemie[n]["vulnerable"] -= 1
+            if enemie[n]["weak"] > 0:
+                enemie[n]["weak"] -= 1
+
+        random_stats["current_enemie"] = (n + 1) % enemie["amount"]
+    player["turn"] +=1
+
+def enemie_status():
+    enemie = game_state.enemie()
+    n = 0
+    for i in range (enemie["amount"]):                        
+        if enemie[i]["enemie_hp"] <= 0 and enemie[i]["status"] == "alive":
+            enemie[i]["status"] = "dead"
+        if enemie[i]["status"] == "dead":
+            n += 1
+        if n == enemie["amount"]:
+            enemie["status"] = "dead"
+
+#---------------------rewards------------------
+def give_gold (min, max):
+    a = round(min/r)
+    b = round(max/r)
+    gold = random.randint(a,b)
+    player["gold"] += gold
+    print (f"received {gold} gold")
+
+def combat_reward():
+    enemie = game_state.enemie()
+    if enemie["type"] == "normal":
+        cc = 80
+        rr = 20 + player["roundje"]
+        vr = player["roundje"]
+        if not player["hp"] <= 0:
+            give_gold(10,30)
+            p_card_add(3,1,cc,rr,vr)
+            stats_game["enemies killed"] += 1
+
+    if enemie["type"] == "elite":
+        cc = 80
+        rr = 40 + player["roundje"]
+        vr = 10 + player["roundje"]
+        if not player["hp"] <= 0:
+            give_gold(20,40)
+            p_card_add(3,1,cc,rr,vr)
+            relic_normal_add_random()
+            stats_game["enemies killed"] += 1
+            stats_game["elites killed"] += 1
+
+    if enemie["type"] == "boss":
+        cc = 0
+        rr = 100
+        vr = 0
+        if not player["hp"] <= 0:
+            give_gold(25,40)
+            p_card_add(3,1,cc,rr,vr)
+            stats_game["acts complpeted"] += 1
+    if random.random() < player["potion_chance"]:
+        potion_add_random()
+        player["potion_chance"] = 0
+    else:
+        player["potion_chance"] += 0.2
+
+def lose_screen ():
+    os.system("cls")
+    print (f"lost on round {player["roundje"]}")
+    game_stats()
+#---------------------events/combats/elites/etc------------------------
+
+def normal_battle():
+    enemie = game_state.enemie()
+    print (enemie)
+    p_draw_pile.clear()
+    p_hand_pile.clear()
+    p_discard_cards.clear()
+    p_exhaust_cards.clear()
+    p_draw_pile.extend(p_cards)    
+    player["turn"] = 1
+    relic_use_combat()
+    random.shuffle(p_draw_pile)
+    print ("--------------------------------------")
+    print (f"round {player["roundje"]}: {enemie["type"]} combat")
+    print (f"figthing {enemie["enemie_name"]}")
+    print ("--------------------------------------")
+    while enemie["status"] == "alive" and player["hp"] > 0:
+        reuse_cards_start_turn()
+        for i in range (enemie["amount"]):           
+            stored[i]["card"] = random.randint(1, 2)
+        enemie_turn_preview (player["roundje"])           
+        player_turn()
+        if enemie[i]["remove_block"] == "yes":
+            enemie["start_block"] = 0
+        if enemie["status"] == 'dead':
+            print (f"{player_name} has defeated {enemie["enemie_name"]}")
+            if "minion" in enemie and enemie["status"] == "dead":
+                minion_flee()
+        enemie_turn(player["roundje"])
+        player["energy"] = player["total_energy"]
+
+        if player["hp"] <= 0:
+            print (f"{player_name} has been defeated by {enemie['enemie_name']} on round {player['roundje']}")
+            break
+        
+        elif player["remove_block"] == "yes":
+            player["block"] = 0
+
+    enter()
+        
+    if player["hp"] > 0:
+        combat_reward()
+        player["roundje"] += 1
+        enter()
+    else: 
+        lose_screen()
+
+
+def combat():
+    global map_lock
+    enemie_number = random.randint(1,4)
+    enemie = enemie_functions [enemie_number](player["roundje"])
+    normal_battle()
+    map_lock = False
+
+
+def elite():
+    normal_battle()
+def shop():
+        shop(5, 3, 3)
+def boss():
+    enemie_number = 1
+    enemie = boss_functions [enemie_number](player["roundje"])
+    normal_battle()
+
+
+# 2.bosses/ acts
+# 3. lay-out (text based)
+# strength for 1 round
+
+#1. boss 
+# minion spawn middle combat (stunned)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#------------pygame constants---------
+pygame.init()
+screen = pygame.display.set_mode((1920,1080))
+pygame.display.set_caption ("game")
+clock = pygame.time.Clock()
+
+playing_node = "tbd"
+playing_floor = 0
+in_play_nodes = []
+route = []
+map_lock = False
+map_show = True
+deck_show = False
+combat_show = False
+
+
+# -------------node_gen----------------
+width = 5 
+middle = width / 2
+height = 12
+floor = 0
+map = []
+
+def map_create_placeholder():
+    map.clear()
+    for i in range (height):
+        map.append([])
+        for j in range (width):
+            node = {
+                    "id_y": i,
+                    "id_x": j,
+                    "type": "empty",
+                    "connect": [],
+                    "onmogelijk": []
+                    }           
+            map[i].append(node)
+
+def note_creation_floor_0():
+    map[0][0]['type'] = "start"
+    map[height - 1][0]['type'] = "end"
+    while True:
+        node_types = random.choices(["combat", "empty"], weights=[60, 40], k=width)
+        if 4 > node_types.count("combat") >= 2:
+            break
+    for j in range(width):
+        map[1][j]['type'] = node_types[j]
+        if node_types[j] != "empty":
+            map[0][0]['connect'].append((j,1))
+
+
+def remove_9_0():
+    if map[height - 2][0]['type'] != "empty" and map[height - 2][0]['connect'] == (9,0):  
+        print("1"); print (map[height - 2][0]['connect']); pass
+    elif  map[height - 2][0]['type'] != "empty" and map[height -2][1]['connect'] == (9,0): 
+        print("2"); print (map[height - 2][1]['connect']); pass
+    else:
+        print("3")
+        map[height-1][0]['type'] = "empty"
+        map[height-1][0]['connect'].clear()
+
+equation = [-1, 0, 1]
+
+def further_node_connection():
+    node_amount = 0
+    for j in range (width):
+        if map[floor][j]['type'] != "empty":
+            node_amount += 1
+
+    for j in range(width):
+        current_node = map[floor][j]
+        if current_node['type'] == "empty":
+            continue
+
+        n = 20 + node_amount
+        m = 20 
+        num_connections = random.choices((1,2), weights=(n,m))[0]
+        attempts = 0
+
+        while len(current_node['connect']) < num_connections and attempts < 20:
+            attempts += 1
+            offset = random.choice(equation)
+            x = j + offset
+            if floor == height - 1: x = 0
+            y = floor + 1
+
+            if not (0 <= x < width):
+                continue
+                
+            if j > 0 and map[floor][j - 1]['connect']:
+                x_list = []
+                last_left_target = 0
+                for k in range (len(map[floor][j - 1]['connect'])):
+                    x_list.append(map[floor][j - 1]['connect'][k][0])
+                    last_left_target = max(x_list)
+                if x < last_left_target:
+                    continue
+
+            add = (x,y)
+            if add not in current_node['connect']:
+                current_node['connect'].append(add)
+            if map[y][x]['type'] == "empty":
+                map[y][x]['type'] = 'tbd'
+            #------- creating rules--------
+
+            if current_node['type'] == "elite":
+                map[y][x]['onmogelijk'].append("elite")
+            if current_node['type'] == "shop":
+                map[y][x]['onmogelijk'].append("shop")
+        
+
+            
+    if floor >= height - 1: return floor        
+    else: return floor + 1
+
+def further_node_creation():
+    combat = 0
+    elite = 0
+    shop = 0
+    event = 0
+    chest = 0
+    end = 0
+    if floor < 3:
+        combat = 100
+    elif 3 <= floor < 6:
+        combat = 100
+        elite = 50
+        shop = 20
+        event = 60
+    elif floor == 6:
+        chest = 100
+    elif 6 < floor < height - 1:
+        combat = 100
+        elite = 60
+        shop = 30
+        event = 70
+    elif floor == height - 1:
+        end = 100
+
+    for j in range (width):
+        node_types = ["combat", "elite", "shop", "event","chest" ,"end"]
+        weight = [combat,elite,shop,event,chest,end]
+        current_node = map[floor][j]
+        if current_node['type'] == "empty": 
+            continue
+        if len(current_node['onmogelijk']) > 0:
+            (current_node['onmogelijk']) = list(set(current_node['onmogelijk']))
+            for ind in range (len(current_node['onmogelijk'])):
+                if current_node['onmogelijk'][ind] == "elite":
+                    node_types.remove("elite")
+                    weight.remove(elite)
+                if current_node['onmogelijk'][ind] == "shop":
+                    node_types.remove("shop")
+                    weight.remove(shop)        
+        current_node['type'] = random.choices(node_types, weights = weight)[0]
+
+
+
+map_create_placeholder()
+note_creation_floor_0()
+for i in range (height - 1):
+    floor = further_node_connection()
+    further_node_creation()
+      
+
+def form_connections (i,j):   
+    current_node = map[i][j]
+    x = screen.get_width() / 2 + ((960/width) * (current_node['id_x'] - ((width - 1)/2)) * 0.8)
+    y = screen.get_height() - screen.get_height() * (current_node['id_y']+1) / (height + 2)
+    if current_node == map[0][0]:
+        x = screen.get_width() / 2
+        y = screen.get_height() - 50
+    if current_node['type'] != "empty":
+        if current_node == map[height - 2][j]:
+            x_con = screen.get_width() / 2
+            y_con = screen.get_height() - screen.get_height() * (current_node['id_y'] + 1) / (height + 1) - 20
+            if (map[i][j]['id_x'],map[i][j]['id_y']) not in in_play_nodes: colour = 'grey'                
+            else: colour = 'grey'
+            if map[i][j] in route:
+                for k in range (width):
+                    if map[height - 1][k] in route: colour = 'black'
+                    
+            pygame.draw.line(screen,colour, (x,y), (x_con, y_con), 5)
+
+        else:
+            for k in range (len(current_node['connect'])):
+                x_base = current_node['connect'][k][0]
+                y_base = current_node['connect'][k][1]
+                x_con = screen.get_width() / 2 + ((960/width) * (x_base - ((width - 1)/2)) * 0.8)
+                y_con = screen.get_height() - screen.get_height() * (y_base  + 1) / (height + 2)
+                if (map[i][j]['id_x'],map[i][j]['id_y']) not in in_play_nodes: colour = 'grey'
+                else: colour = 'grey'             
+                if map[y_base][x_base] in route and map[i][j] in route: colour = 'black'
+                pygame.draw.line(screen,colour, (x,y), (x_con, y_con), 5)
+
+
+def map_loop (function):
+    for i in range (height):
+        for j in range (width):
+            function(i,j)
+
+def nodes_in_play(current_node):
+    if current_node == "tbd": current_node = map[0][0]
+    in_play_nodes.clear()
+    in_play_nodes.append((0,0))
+    start_floor = current_node['id_y']
+    in_play_nodes.append((current_node['id_x'],current_node['id_y']))
+    for i in range (start_floor, height):
+        for j in range (width):
+            node = map[i][j]
+            if (node['id_x'],node['id_y']) in in_play_nodes:
+                for k in range(len(node['connect'])):
+                    in_play_nodes.append(node['connect'][k])    
+nodes_in_play("tbd")
+
+
+    
+
+
+
+
+
+#-------------------- pygame ------------------------
+act1_active = True
+
+number = 0
+# ------------sprites---------
+base_path = os.path.dirname(os.path.abspath(__file__))
+#buttons
+deck_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "deck.png")).convert_alpha()), 0, 0.2)
+continue_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "continue.png")).convert_alpha()), 0, 0.2)
+map_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "map.png")).convert_alpha()), 0, 0.2)
+#enemies
+gerald_the_vast_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "orc.png")).convert_alpha()), 0, 0.40)
+gerald_the_least_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "orc.png")).convert_alpha()), 0, 0.40)
+sparrow_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "orc.png")).convert_alpha()), 0, 0.40)
+peppie_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "orc.png")).convert_alpha()), 0, 0.40)
+kokkie_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "orc.png")).convert_alpha()), 0, 0.40)
+#other
+hp_bar = pygame.image.load(os.path.join(base_path, "game_images", "bar.png")).convert_alpha()
+green_surf = pygame.image.load(os.path.join(base_path, "game_images","health_bar.png"))
+grave_surf = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "grave.png")).convert_alpha()), 0.15)
+grave_crow_surf = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "grave_crow.png")).convert_alpha()), 0.15)
+grave_surfaces = {"grave": grave_surf,
+                  "grave_crow": grave_crow_surf}
+grave_sequence = random.choices(["grave","grave_crow"], weights = (70,30), k=10)
+energy_left0 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "left0.png")).convert_alpha()), 0.15)
+energy_left1 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "left1.png")).convert_alpha()), 0.15)
+energy_left2 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "left2.png")).convert_alpha()), 0.15)
+energy_left3 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "left3.png")).convert_alpha()), 0.15)
+energy_left4 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "left4.png")).convert_alpha()), 0.15)
+energy_left5 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "left5.png")).convert_alpha()), 0.15)
+energy_right2 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "right2.png")).convert_alpha()), 0.15)
+energy_right3 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "right3.png")).convert_alpha()), 0.15)
+energy_right4 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "right4.png")).convert_alpha()), 0.15)
+energy_right5 = pygame.transform.scale_by((pygame.image.load(os.path.join(base_path, "game_images", "right5.png")).convert_alpha()), 0.15)
+# #cards
+strike_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "strike_energy.png")).convert_alpha()), 0, 0.15)
+block_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "block_energy.png")).convert_alpha()), 0, 0.15)
+#player
+player_basic = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "player.png")).convert_alpha()), 0, 0.15)
+player_strike = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "player.strike.png")).convert_alpha()), 0, 0.15)
+
+
+
+
+class map_nodes(pygame.sprite.Sprite):
+    def __init__(self, i, j):
+        self.circle_drawn = False        
+        super().__init__()
+        self.current_node = map[i][j]
+        self.node_type = self.current_node['type']
+        self.x = screen.get_width() / 2 + ((960/width) * (self.current_node['id_x'] - ((width - 1)/2)) * 0.8)
+        self.y = screen.get_height() - screen.get_height() * (self.current_node['id_y']+1) / (height + 2)
+        if self.node_type == "start":
+            self.x = screen.get_width() / 2
+            self.y = screen.get_height() - 50
+        if self.node_type == "end":
+            self.x = screen.get_width() / 2
+            self.y = screen.get_height() - screen.get_height() * (self.current_node['id_y']+1) / (height + 1)
+        
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        self.combat_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "sword.png")).convert_alpha()), 20, 0.1)
+        self.elite_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "doublesword.png")).convert_alpha()), 0, 0.1)
+        self.event_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "question.png")).convert_alpha()), 0, 0.1)
+        self.chest_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "chest.png")).convert_alpha()), 0, 0.1)
+        self.shop_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "buy.png")).convert_alpha()), 0, 0.02)
+        self.start_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "start.png")).convert_alpha()), 0, 0.4)
+        self.end_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "end.png")).convert_alpha()), 0, 0.6)
+        self.surfaces = {"combat": self.combat_surf,
+                    "elite": self.elite_surf,
+                    "event": self.event_surf,
+                    "chest": self.chest_surf,
+                    "shop": self.shop_surf,
+                    "empty": self.shop_surf,
+                    "start": self.start_surf,
+                    "end": self.end_surf,
+                    }
+        scale = 0.8
+        self.image = pygame.transform.rotozoom(self.surfaces[f"{self.node_type}"], 0, 0.7)
+        self.rect = self.image.get_rect(center = (self.x,self.y))
+        self.base_surface = self.image.copy()
+
+
+
+        #other_surfaces
+        if self.node_type in ["combat", "event", "elite", "shop", "chest"]:
+            scale = 0.3 * 0.7
+        else:
+            scale = 0.6
+        self.circle_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "circle.png")).convert_alpha()), 0, scale)
+        circle_x = self.base_surface.get_width() // 2
+        circle_y = self.base_surface.get_height() // 2
+        self.circle_rect = self.circle_surf.get_rect(center=(circle_x, circle_y))
+
+    def node_pressed(self):
+        global playing_floor
+        global map_lock
+        if pygame.mouse.get_pressed() == (1,0,0):
+            mouse_pos = pygame.mouse.get_pos()
+            if self.rect.collidepoint(mouse_pos):
+                node = self.current_node
+                if node['id_y'] == playing_floor and (node['id_x'],node['id_y']) in in_play_nodes and not map_lock:
+                    print(node['id_x'],node['id_y'], node['type'])
+                    playing_floor += 1
+                    route.append(node)
+                    nodes_in_play(node)
+                    self.circle_drawn = True
+                    map_lock = True
+                    
+                    if self.node_type == "combat":
+                        game_state.start_combat()
+                    elif self.node_type == "elite":
+                        game_state.start_elite()
+                    elif self.node_type == "event":
+                        pass
+                    elif self.node_type == "shop":
+                        pass
+                    elif self.node_type == "chest":
+                        pass
+                    elif self.node_type == "rest":
+                        pass
+                    elif self.node_type == "start":
+                        pass
+                    elif self.node_type == "end":
+                        pass
+
+                    map_lock = False
+
+
+                    
+
+                    
+
+
+    def circle_draw(self):        
+        if self.circle_drawn: 
+            surface = self.base_surface.copy()
+            x = self.circle_surf.get_width() // 2
+            y = self.circle_surf.get_height() // 2
+            rect = surface.get_rect(center=(x, y))
+            self.circle_surf.blit(surface, rect)            
+            self.image = self.circle_surf
+            self.rect = (self.circle_surf.get_rect(center=(self.x, self.y)))
+
+    def greyed_out_draw(self):
+        if (self.current_node['id_x'],self.current_node['id_y']) not in in_play_nodes and not self.circle_drawn:
+            self.image = pygame.transform.grayscale(self.image)
+
+       
+    def update(self):
+        self.node_pressed()
+        self.circle_draw()
+        self.greyed_out_draw()
+        
+class extra_button_nodes (pygame.sprite.Sprite):
+    def __init__(self, j, buttons):
+        super().__init__()
+        
+        buttons_surf = {    
+                        "continue":     (continue_surf,    (1750,900)),
+                        "map":          (map_surf,         (1750,100)),
+                        "deck":         (deck_surf,        (1750,300)),
+                        }
+        
+
+        self.type = buttons[j]
+
+        surface, place = buttons_surf[self.type]
+        self.image = surface
+        self.rect = self.image.get_rect(center = place) 
+
+    def button_press(self):
+        if pygame.mouse.get_pressed() == (1,0,0):
+            mouse_pos = pygame.mouse.get_pos()
+            if self.rect.collidepoint(mouse_pos):
+                if self.type == "continue":
+                    p_hand_pile.append(random.choice(["strike"]))
+                    hand_group_update()
+                    print("yo")
+                    preview()
+                    preview()
+                    enemie_attack()
+                    enemie_attack()
+                    #game_state.turn_switch("enemie")
+                if self.type == "map":
+                    print("map")
+                    game_state.open_map()
+                if self.type == "deck":
+                    print("deck")
+                    game_state.open_deck()
+                
+                    
+
+    def update(self):
+        self.button_press()
+
+class deck_cards(pygame.sprite.Sprite):
+    def __init__(self, type, cards):
+        super().__init__()
+        if len(p_cards) <= 20:
+            i = cards % 7
+            j = cards // 7
+            self.x = 30 + 205 * i
+            self.y = 30 + 300 * j
+            size = 1
+        else:
+            i = cards % 10
+            j = cards // 10
+            self.x = 30 + 150 * i
+            self.y = 30 + 200 * j
+            size = 0.7
+
+
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        strike_surface = pygame.transform.scale_by(strike_surf, size)
+        block_surface = pygame.transform.scale_by(block_surf, size)
+        card_surfaces = {"strike": strike_surface,
+                        "block": block_surface} 
+
+        self.image = card_surfaces[type]
+        self.rect = self.image.get_rect(topleft = (self.x,self.y))
+
+
+    def card_update(self):
+        pass
+        
+    def update(self):
+        self.card_update()
+        pass
+
+class player_class(pygame.sprite.Sprite):
+    def __init__(self, part):
+        super().__init__()
+        self.correct_player = False
+        self.max_hp = 100
+        self.hp = 100
+        self.x_cord = 200
+        self.y_cord = 650
+        self.bar_width = self.max_hp * 3
+        self.bar_height = 30
+        hp_bar = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "bar.png")).convert_alpha()), 0, 0.15)
+        green_surf = pygame.image.load(os.path.join(base_path, "game_images","health_bar.png"))
+        if part == "player":
+            player_list = ["player", "player_strike"]
+            surfaces = {"player": player_basic,
+                       "player_strike": player_strike}
+            surface = surfaces[player_list[0]]
+            cords = (self.x_cord,self.y_cord)
+
+            self.correct_player = True
+            
+
+        if part == "hp_bar1":
+            hp_bar_frame = pygame.transform.smoothscale(hp_bar, (self.bar_width, self.bar_height))
+            
+            surface = hp_bar_frame
+            cords = (self.x_cord, self.y_cord + 50)
+
+        if part == "hp_bar2":
+            health_bar = pygame.transform.smoothscale(green_surf, (self.bar_width, self.bar_height))
+            ratio = self.hp / self.max_hp
+            green_width = int(self.bar_width * ratio)
+
+            crop_rect = pygame.Rect(0, 0, green_width, self.bar_height)
+            cropped_image = health_bar.subsurface(crop_rect)
+
+            surface = cropped_image
+            cords = (self.x_cord, self.y_cord + 50)
+
+        self.image = surface
+        self.rect = self.image.get_rect(bottomleft = cords)
+
+    def hp_bar_update(self):
+        self.max_hp = player['max_hp']
+        self.hp = max(0, player['hp'])
+
+
+
+    def update(self):
+        self.hp_bar_update()
+
+class hand_class(pygame.sprite.Sprite):
+    def __init__(self, type, i):
+        self.type = type
+        self.enemie = "tbd"
+        super().__init__()    
+        self.lock = False  
+        self.press = False
+        self.x = int((screen.get_width()/2) + (130 * ( i - ((len(p_hand_pile) - 1)/2))))
+        self.y = 850
+        size = 1
+        
+        card_surfaces = {"strike": strike_surf,
+                        "block": block_surf} 
+
+        self.image = card_surfaces[self.type]
+        self.rect = self.image.get_rect(midtop = (self.x,self.y))
+
+    def card_press(self):
+        single_target = ["strike"]
+        player_target = ["block"] 
+        mouse_pos = pygame.mouse.get_pos()
+        if  pygame.mouse.get_pressed() == (1,0,0) and self.press:            
+            self.rect = self.image.get_rect(center = (mouse_pos))
+            # for enemie in enemie_group.sprites():
+            #     if enemie.correct_enemie and self.rect.colliderect(enemie.rect):
+            #         pass not utelised
+
+        else:
+            if self.type in single_target:
+                for enemie in reversed(enemie_group.sprites()):
+                    if enemie.correct_enemie and self.rect.colliderect(enemie.rect):
+                        self.enemie = enemie
+                        self.card_play(enemie)
+                        break
+            if self.type in player_target:
+                for player in (player_group.sprites()):
+                    if self.rect.colliderect(player.rect):
+                        self.card_play("tbd")
+                        break
+
+
+            self.rect = self.image.get_rect(midtop = (self.x,self.y))
+
+            self.press = False
+
+        if pygame.mouse.get_pressed() == (1,0,0) and self.press: 
+            if self.type == "strike":
+                for player in player_group:
+                    if player.correct_player:
+                        player.image = player_strike
+            
+
+    def card_play(self, enemie):
+        if enemie != "tbd":
+            self.enemie = enemie
+            target = enemie.exact_enemie
+        card_processing(self.type,   target)
+      
+    def update(self):
+        self.card_press()
+
+class enemie_class(pygame.sprite.Sprite):
+    def __init__(self, part, i):
+        super().__init__()
+        self.i = i
+        self.correct_enemie = False
+        self.enemie = game_state.enemie()
+        self.exact_enemie = self.enemie[i]
+        self.x_cord = (1100 - 100 * self.enemie['amount']) + 300 * i
+        self.y_cord = 700
+        self.max_hp = self.enemie[i]['max_hp']
+        self.hp = max(0, self.enemie[i]['enemie_hp'])
+        self.bar_width = self.max_hp * 3
+        self.bar_height = 30
+
+        enemie_surfaces = { "gerald the vast": gerald_the_vast_surf,
+                            "gerald the least": gerald_the_least_surf,
+                            "sparrow": sparrow_surf,
+                            "Peppie": peppie_surf,
+                            "Kokkie": kokkie_surf
+                            }
+        #other
+
+        if part == "enemie":
+            if self.hp > 0:
+                self.correct_enemie = True
+                surface = enemie_surfaces[self.enemie[i]['enemie_name']]
+                cords = (self.x_cord,self.y_cord)
+            else:               
+                surface = grave_surfaces[grave_sequence[i%10]]
+                cords = (self.x_cord,self.y_cord)
+
+
+        if part == "hp_bar1":
+            hp_bar_frame = pygame.transform.smoothscale(hp_bar, (self.bar_width, self.bar_height))
+            
+            surface = hp_bar_frame
+            cords = (self.x_cord, self.y_cord + 50)
+
+        if part == "hp_bar2":
+            health_bar = pygame.transform.smoothscale(green_surf, (self.bar_width, self.bar_height))
+            ratio = self.hp / self.max_hp
+            green_width = int(self.bar_width * ratio)
+
+            crop_rect = pygame.Rect(0, 0, green_width, self.bar_height)
+            cropped_image = health_bar.subsurface(crop_rect)
+
+            surface = cropped_image
+            cords = (self.x_cord, self.y_cord + 50)
+
+        if part == "name":
+            name_font = pygame.font.Font(None, 30)
+            name_surf = name_font.render(f"{self.enemie[i]['enemie_name']}", False, 'grey')
+            surface = name_surf
+            cords = (self.x_cord, self.y_cord + 20)
+
+        self.image = surface
+        self.rect = self.image.get_rect(bottomleft = cords)
+
+        
+
+    def hp_bar_update(self):
+        self.max_hp = self.enemie[self.i]['max_hp']
+        self.hp = max(0, self.enemie[self.i]['enemie_hp'])
+
+
+    def enemie_turn_preview(self):
+        random_stats["current_enemie"] = 0
+        for i in range (self.enemie["amount"]):
+            n = random_stats["current_enemie"]
+            if self.enemie[n]["status"] == "alive":
+                if self.enemie[n]['card_types'] == "attack":
+                    attack_function, dmg, amount = self.enemie[n]["attack"][stored[n]["card"]]
+                    attack_function (dmg, amount, player['roundje'], "yes")
+
+                elif self.enemie[n]["card_types"] == "block":
+                    print (f"{self.enemie[n]["enemie_name"]} is blocking next turn")
+
+                elif self.enemie[n]["card_types"] == "debuff":
+                    print (f"{self.enemie[n]["enemie_name"]} is debuffing next turn")
+
+                if not self.enemie[n]["special"] == 0:
+                    print   (f"{self.enemie[n]["enemie_name"]} is buffing next turn")
+            random_stats["current_enemie"] = (n + 1) % self.enemie["amount"]
+
+    def enemie_turn (self):
+        random_stats["current_enemie"] = 0
+        for i in range (self.enemie["amount"]):
+            n = random_stats["current_enemie"]
+            if self.enemie[n]["status"] == "alive":
+                if self.enemie[n]['card_types'] == "attack":
+                    attack_function, dmg, amount = self.enemie[n]["attack"][stored[n]["card"]]
+                    attack_function(dmg, amount, player['roundje'], "no")
+
+                elif self.enemie[n]["card_types"] == "block":
+                    block_function, block = self.enemie[n]["block"][stored[n]["card"]]
+                    block_function(block, player['roundje'])
+
+                elif self.enemie[n]["card_types"] == "debuff":
+                    debuff_function, amount = self.enemie[n]["debuff"][stored[n]["card"]]
+                    debuff_function(amount)
+
+                if not self.enemie[n]["special"] == 0:
+                    special_function, x = self.enemie[n]["special"]
+                    special_function (x)
+                else:
+                    print ("need to add new type")
+                
+                if self.enemie[n]["frail"] > 0:
+                    self.enemie[n]["frail"] -= 1
+                if self.enemie[n]["vulnerable"] > 0:
+                    self.enemie[n]["vulnerable"] -= 1
+                if self.enemie[n]["weak"] > 0:
+                    self.enemie[n]["weak"] -= 1
+
+            random_stats["current_enemie"] = (n + 1) % self.enemie["amount"]
+        player["turn"] +=1
+        
+        
+        # game_state.turn_switch("player")
+
+    def update(self):
+        self.hp_bar_update()
+stored = {0:{"card": 1},
+          1:{"card": 1},
+          2:{"card": 1},
+          3:{"card": 1},
+          4:{"card": 1},
+          5:{"card": 1},
+          6:{"card": 1},
+          7:{"card": 1},
+          8:{"card": 1},
+          9:{"card": 1}}
+
+def preview():
+    for i in range (game_state.enemie()["amount"]):           
+        stored[i]["card"] = random.randint(1, 2)
+    for i in range (game_state.enemie()['amount']):
+        for enemie in enemie_group.sprites():
+            if enemie.i == i and enemie.correct_enemie:
+                enemie.enemie_turn_preview()
+
+def enemie_attack():
+    for i in range (game_state.enemie()['amount']):
+        for enemie in enemie_group.sprites():
+            if enemie.i == i and enemie.correct_enemie:
+                enemie.enemie_turn()
+
+
+# --------------backgrounds-----------------
+def background(type, scale):
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    wood_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "wood_background.jpg")).convert_alpha()), 90, 1)
+    paper_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "paper_background.jpg")).convert_alpha()), 0, 1)
+    battle_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "battle_background.jpg")).convert_alpha()), 0, 1)
+    card_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "card_background.jpg")).convert_alpha()), 0, 1)
+    x = screen.get_width() / 2
+    y = screen.get_height() / 2
+    if type == "wood":
+        surface = wood_surf
+    if type == "map":
+        surface = paper_surf
+    if type == "battle":
+        surface = battle_surf
+    if type == "card":
+        surface = card_surf
+    resised_surface = pygame.transform.smoothscale(surface, scale)
+    resised_rect = resised_surface.get_rect(center = (x,y))
+    screen.blit(resised_surface, resised_rect)
+
+def energy_show():
+    energy_surfaces = {"left": {0: energy_left0,
+                            1: energy_left1,
+                            2: energy_left2,
+                            3: energy_left3,
+                            4: energy_left4,
+                            5: energy_left5},
+                    "right": {2: energy_right2,
+                              3: energy_right3,
+                              4: energy_right4,
+                              5: energy_right5,}}
+    surface = energy_surfaces["right"][player['total_energy']].copy()
+    rect = surface.get_rect(topleft = (0,0))
+    surface.blit(energy_surfaces['left'][player['energy']], rect)
+    surface = pygame.transform.scale_by(surface, 0.4)
+    energy_rect = surface.get_rect( center = (150,800))
+    screen.blit(surface,energy_rect)
+
+def player_image_reset():
+    for player in player_group:
+        if player.correct_player:
+            player.image = player_basic
+# #----------constants-------------
+
+
+node_group = pygame.sprite.Group()
+for i in range (height):
+    for j in range (width):
+        if  map[i][j]['type'] != "empty":
+            node_group.add(map_nodes(i,j))
+combat_buttons = pygame.sprite.Group()
+map_buttons = pygame.sprite.Group()
+deck_buttons = pygame.sprite.Group()
+map_types = ["deck", "map", "combat"]
+group_types = {"deck":      (deck_buttons,      ["continue","map"]),
+               "map":       (map_buttons,       ["deck","continue",]),
+               "combat":    (combat_buttons,    ["deck", "map","continue"])}
+for i in range (len(map_types)):
+    group, buttons = group_types[map_types[i]]
+    for j in range (len(buttons)):
+        group.add(extra_button_nodes(j, buttons))
+
+deck_card_group = pygame.sprite.Group()
+hand_card_group = pygame.sprite.Group()
+player_group = pygame.sprite.Group()
+enemie_group = pygame.sprite.Group()
+energy_group = pygame.sprite.Group()
+player_attributes = ("player","hp_bar1","hp_bar2")
+for i in range (len(player_attributes)):
+    player_group.add(player_class(player_attributes[i]))
+
+
+
+
+def deck_group_update():
+    deck_card_group.empty()
+    for i in range (len(p_cards)):
+        deck_card_group.add(deck_cards(p_cards[i], i))
+
+deck_group_update()
+
+def hand_group_update():
+    hand_card_group.empty()
+    for i in range (len(p_hand_pile)):
+        hand_card_group.add(hand_class(p_hand_pile[i], i))
+
+hand_group_update()
+
+def enemie_hpbar_update():
+    for i in range (game_state.current_enemie['amount']):
+        enemie_group.empty()
+        for i in range (game_state.current_enemie['amount']):
+            enemie_attributes = ("enemie","hp_bar1","hp_bar2","name")
+            for j in range (len(enemie_attributes)):
+                enemie_group.add(enemie_class(enemie_attributes[j], i)  )  
+#----------event--------------
+
+
+running = True
+# ----------game----------
+run = 0
+while running:
+    mouse_pos = (pygame.mouse.get_pos())
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if game_state.combat_show:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for card in reversed(hand_card_group.sprites()):
+                    if card.rect.collidepoint(event.pos): 
+                        card.press = True
+                        break
+
+    if game_state.map_show:
+        background("wood", (1920,1080))
+        background("map", (960,1080))
+        map_loop(form_connections)
+        node_group.draw(screen)
+        playing_node = node_group.update()
+        map_buttons.draw(screen)
+        map_buttons.update()
+
+    if game_state.deck_show:
+        background("wood", (1920,1080))
+        deck_buttons.draw(screen)
+        deck_buttons.update()
+        deck_card_group.draw(screen)
+        deck_card_group.update
+
+    if game_state.combat_show:
+        background("battle", (1920,1080))
+        combat_buttons.draw(screen)
+        combat_buttons.update()
+        player_group.draw(screen)
+        player_group.update()
+        player_image_reset()
+        enemie_group.draw(screen)
+        enemie_group.update()
+        energy_show()
+        hand_card_group.draw(screen)
+        hand_card_group.update()
+        
+
+
+    pygame.display.update()
+    clock.tick(60)
+
+#debugg
+#(totaal aantal: op einde)
+#remove duplicate routes
+#interactable -> cirkel
+#beter fotos
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
