@@ -74,6 +74,8 @@ class Gamestate:
         enemie_group.empty()
         for i in range (self.current_enemie['amount']):
             enemie_attributes = ("enemie","hp_bar1","hp_bar2","name","preview")
+            if int(self.current_enemie[i]['start_block']) > 0:
+                self.current_enemie_attributes.append("shield bar")
             for j in range (len(enemie_attributes)):
                 enemie_group.add(enemie_class(enemie_attributes[j], i)  )
         player_turn_start()  
@@ -2467,7 +2469,7 @@ class extra_button_nodes (pygame.sprite.Sprite):
                 if self.type == "continue" and self.continue_cooldown < pygame.time.get_ticks() - self.c_timer:
                     self.c_timer = pygame.time.get_ticks()
                     if game_state.combat_show:
-                        if self.main_game_state == "map":
+                        if game_state.main_game_state == "map":
                             game_state.open("map")
                         elif game_state.current_enemie['status'] == "dead":
                             game_state.open("map")
@@ -2583,7 +2585,6 @@ class player_class(pygame.sprite.Sprite):
             bottom_surface.blit(text_surf, text_rect)
             surface = bottom_surface
             cords = (self.x_cord - 20, self.y_cord + 55)
-            print (player['block'])
             
         self.image = surface
         self.rect = self.image.get_rect(bottomleft = cords)
@@ -2701,7 +2702,7 @@ class enemie_class(pygame.sprite.Sprite):
             self.cords = (self.x_cord, self.y_cord + 50)
 
         elif part == "hp_bar2":
-            if player['block'] <= 0:
+            if self.enemie[i]['start_block'] <= 0:
                 health_bar = pygame.transform.smoothscale(green_surf, (self.bar_width, self.bar_height))
                 ratio = self.hp / self.max_hp
                 green_width = int(self.bar_width * ratio)
@@ -2724,7 +2725,7 @@ class enemie_class(pygame.sprite.Sprite):
         elif part == "shield_bar":
             bottom_surface = shield_round_surf.copy()
             shield_font = pygame.font.Font(None, 40)
-            text_surf = shield_font.render(f"{player['block']}", False, 'black')
+            text_surf = shield_font.render(f"{self.enemie[i]['start_block']}", False, 'black')
             text_rect = text_surf.get_rect(center = (shield_round_surf.get_width()/2,shield_round_surf.get_height()/2))
             bottom_surface.blit(text_surf, text_rect)
             surface = bottom_surface
@@ -3002,10 +3003,13 @@ def hand_group_update():
 hand_group_update()
 
 def enemie_hpbar_update():
+    enemie = game_state.enemie()
     for i in range (game_state.current_enemie['amount']):
         enemie_group.empty()
         for i in range (game_state.current_enemie['amount']):
-            enemie_attributes = ("enemie","hp_bar1","hp_bar2","name","preview")
+            enemie_attributes = ["enemie","hp_bar1","hp_bar2","name","preview"]
+            if int(enemie[i]['start_block']) > 0:
+                enemie_attributes.append("shield bar")
             for j in range (len(enemie_attributes)):
                 enemie_group.add(enemie_class(enemie_attributes[j], i)  )  
 
@@ -3099,6 +3103,16 @@ while running:
 
 # def enemie_dead
 # def player dead
+
+
+
+
+
+
+
+
+
+
 
 
 
