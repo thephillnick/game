@@ -1328,6 +1328,7 @@ def status_check ():
         if dead == enemie["amount"]:
             enemie["status"] = "dead"
         else: enemie['status'] == "alive"
+    game_state.current_enemie = enemie
 
 def minion_flee ():
     enemie = game_state.enemie()
@@ -2472,7 +2473,7 @@ class extra_button_nodes (pygame.sprite.Sprite):
         cooldown = 0.5
         if pygame.mouse.get_pressed() == (1,0,0):
             mouse_pos = pygame.mouse.get_pos()
-            if self.rect.collidepoint(mouse_pos) and pygame.time.get_ticks() > self.cooldown_last_press + cooldown:
+            if self.rect.collidepoint(mouse_pos) and pygame.time.get_ticks()  - self.cooldown_last_press > cooldown:
                 if game_state.main_game_state == "map":
                     if self.type == "map":
                         if game_state.map_show:
@@ -2499,7 +2500,7 @@ class extra_button_nodes (pygame.sprite.Sprite):
                         game_state.open("reward")
                     if self.type == "continue_small":
                         status_check()
-                        print (self.enemie)
+                        self.enemie = game_state.enemie()
                         if self.enemie['status'] == "alive" and player['hp'] > 0:
                             player_turn_end()
                             enemie_turn_2()
@@ -3003,8 +3004,8 @@ combat_buttons = pygame.sprite.Group()
 map_buttons = pygame.sprite.Group()
 deck_buttons = pygame.sprite.Group()
 map_types = ["deck", "map", "combat"]
-group_types = {"deck":      (deck_buttons,      ["continue","map"]),
-               "map":       (map_buttons,       ["deck","continue",]),
+group_types = {"deck":      (deck_buttons,      ["deck","map"]),
+               "map":       (map_buttons,       ["deck","map",]),
                "combat":    (combat_buttons,    ["deck", "map","continue_small"])}
 for i in range (len(map_types)):
     group, buttons = group_types[map_types[i]]
@@ -3158,6 +3159,17 @@ while running:
 
 # def enemie_dead
 # def player dead
+
+
+
+
+
+
+
+
+
+
+
 
 
 
