@@ -1111,53 +1111,53 @@ def shop(cards, relics, potions):
                "price": price}
         shop_potions.append(item)
 
-    shop_show(cards, relics, potions)
-    while True:
-        pre_choice = int(input("What do you want to buy? [0 to skip] "))
-        choice = pre_choice - 1
-        if choice == -1:
-            break
-        elif 0 <= choice < cards:
-            if player["gold"] >= shop_cards[choice]["price"]:
-                add = shop_cards[choice]["item"]
-                p_cards.append(add)
-                player["gold"] -= shop_cards[choice]["price"]
-                print (f"bought {shop_cards[choice]["item"]}")
-                stats_game["gold spent"] += shop_cards[choice]["price"]
-                shop_cards[choice] = "empty"
-            else:
-                print ("insuficient funds")
-        elif cards + relics > choice >= cards:
-            n = choice - cards
-            if player["gold"] >= shop_relics[n]["price"]:
-                add = shop_relics[n]["item"]
-                player["gold"] -= shop_relics[n]["price"]
-                relic_pile.append(add)
-                if add in relics_common:
-                    relics_common.remove(add)
-                if add in relics_rare:
-                    relics_rare.remove(add)                
-                if add in relics_ancient:
-                    relics_ancient.remove(add)
-                print (f"bought {shop_relics[n]["item"]}")
-                stats_game["gold spent"] += shop_cards[n]["price"]
-                shop_relics[n] = "empty"
+    # shop_show(cards, relics, potions)
+    # while True:
+    #     pre_choice = int(input("What do you want to buy? [0 to skip] "))
+    #     choice = pre_choice - 1
+    #     if choice == -1:
+    #         break
+    #     elif 0 <= choice < cards:
+    #         if player["gold"] >= shop_cards[choice]["price"]:
+    #             add = shop_cards[choice]["item"]
+    #             p_cards.append(add)
+    #             player["gold"] -= shop_cards[choice]["price"]
+    #             print (f"bought {shop_cards[choice]["item"]}")
+    #             stats_game["gold spent"] += shop_cards[choice]["price"]
+    #             shop_cards[choice] = "empty"
+    #         else:
+    #             print ("insuficient funds")
+    #     elif cards + relics > choice >= cards:
+    #         n = choice - cards
+    #         if player["gold"] >= shop_relics[n]["price"]:
+    #             add = shop_relics[n]["item"]
+    #             player["gold"] -= shop_relics[n]["price"]
+    #             relic_pile.append(add)
+    #             if add in relics_common:
+    #                 relics_common.remove(add)
+    #             if add in relics_rare:
+    #                 relics_rare.remove(add)                
+    #             if add in relics_ancient:
+    #                 relics_ancient.remove(add)
+    #             print (f"bought {shop_relics[n]["item"]}")
+    #             stats_game["gold spent"] += shop_cards[n]["price"]
+    #             shop_relics[n] = "empty"
 
-            else:
-                print ("insuficient funds")
-        elif cards + relics + potions > choice >= cards + relics:
-            n = choice - cards - relics
-            if player["gold"] >= shop_potions[n]["price"]:
-                player["gold"] -= shop_potions[n]["price"]
-                add = shop_potions[n]["item"]
-                potion_pile.append(add)
-                print (f"bought {shop_potions[n]["item"]}")
-                stats_game["gold spent"] += shop_potions[n]["price"]
-                shop_potions[n] = "empty"
-            else:
-                print ("insuficient funds")
-        time.sleep(0.6)
-        shop_show(cards, relics, potions)
+    #         else:
+    #             print ("insuficient funds")
+    #     elif cards + relics + potions > choice >= cards + relics:
+    #         n = choice - cards - relics
+    #         if player["gold"] >= shop_potions[n]["price"]:
+    #             player["gold"] -= shop_potions[n]["price"]
+    #             add = shop_potions[n]["item"]
+    #             potion_pile.append(add)
+    #             print (f"bought {shop_potions[n]["item"]}")
+    #             stats_game["gold spent"] += shop_potions[n]["price"]
+    #             shop_potions[n] = "empty"
+    #         else:
+    #             print ("insuficient funds")
+    #     time.sleep(0.6)
+    #     shop_show(cards, relics, potions)
 
 def shop_show(cards, relics, potions):
     os.system("cls")
@@ -1966,41 +1966,41 @@ def give_gold (min, max):
     player["gold"] += gold
     print (f"received {gold} gold")
 
-def combat_reward():
-    enemie = game_state.enemie()
-    if enemie["type"] == "normal":
-        cc = 80
-        rr = 20 + player["roundje"]
-        vr = player["roundje"]
-        if not player["hp"] <= 0:
-            give_gold(10,30)
-            p_card_add(3,1,cc,rr,vr)
-            stats_game["enemies killed"] += 1
+# def combat_reward():
+#     enemie = game_state.enemie()
+#     if enemie["type"] == "normal":
+#         cc = 80
+#         rr = 20 + player["roundje"]
+#         vr = player["roundje"]
+#         if not player["hp"] <= 0:
+#             give_gold(10,30)
+#             p_card_add(3,1,cc,rr,vr)
+#             stats_game["enemies killed"] += 1
 
-    if enemie["type"] == "elite":
-        cc = 80
-        rr = 40 + player["roundje"]
-        vr = 10 + player["roundje"]
-        if not player["hp"] <= 0:
-            give_gold(20,40)
-            p_card_add(3,1,cc,rr,vr)
-            relic_normal_add_random()
-            stats_game["enemies killed"] += 1
-            stats_game["elites killed"] += 1
+#     if enemie["type"] == "elite":
+#         cc = 80
+#         rr = 40 + player["roundje"]
+#         vr = 10 + player["roundje"]
+#         if not player["hp"] <= 0:
+#             give_gold(20,40)
+#             p_card_add(3,1,cc,rr,vr)
+#             relic_normal_add_random()
+#             stats_game["enemies killed"] += 1
+#             stats_game["elites killed"] += 1
 
-    if enemie["type"] == "boss":
-        cc = 0
-        rr = 100
-        vr = 0
-        if not player["hp"] <= 0:
-            give_gold(25,40)
-            p_card_add(3,1,cc,rr,vr)
-            stats_game["acts complpeted"] += 1
-    if random.random() < player["potion_chance"]:
-        potion_add_random()
-        player["potion_chance"] = 0
-    else:
-        player["potion_chance"] += 0.2
+#     if enemie["type"] == "boss":
+#         cc = 0
+#         rr = 100
+#         vr = 0
+#         if not player["hp"] <= 0:
+#             give_gold(25,40)
+#             p_card_add(3,1,cc,rr,vr)
+#             stats_game["acts complpeted"] += 1
+#     if random.random() < player["potion_chance"]:
+#         potion_add_random()
+#         player["potion_chance"] = 0
+#     else:
+#         player["potion_chance"] += 0.2
 
 def lose_screen ():
     os.system("cls")
@@ -2099,8 +2099,8 @@ def combat():
 
 def elite():
     normal_battle()
-def shop():
-        shop(5, 3, 3)
+# def shop():
+#     shop(5, 3, 3)
 def boss():
     enemie_number = 1
     enemie = boss_functions [enemie_number](player["roundje"])
@@ -2391,6 +2391,11 @@ gerald_the_least_surf = pygame.transform.rotozoom((pygame.image.load(os.path.joi
 sparrow_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "orc.png")).convert_alpha()), 0, 0.40)
 peppie_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "orc.png")).convert_alpha()), 0, 0.40)
 kokkie_surf = pygame.transform.rotozoom((pygame.image.load(os.path.join(base_path, "game_images", "orc.png")).convert_alpha()), 0, 0.40)
+grand_sparrow_surf = pygame.transform.scale_by(pygame.image.load(os.path.join(base_path, "game_images", "orc.png")), 0.4)
+rolrat_surf = pygame.transform.scale_by(pygame.image.load(os.path.join(base_path, "game_images", "orc.png")), 0.4)
+dark_knight_surf = pygame.transform.scale_by(pygame.image.load(os.path.join(base_path, "game_images", "orc.png")), 0.4)
+ghost_knight_surf = pygame.transform.scale_by(pygame.image.load(os.path.join(base_path, "game_images", "orc.png")), 0.4)
+forgotten_knight_surf = pygame.transform.scale_by(pygame.image.load(os.path.join(base_path, "game_images", "orc.png")), 0.4)
 #other
 hp_bar = pygame.image.load(os.path.join(base_path, "game_images", "bar.png")).convert_alpha()
 green_surf = pygame.image.load(os.path.join(base_path, "game_images","health_bar.png"))
@@ -2435,7 +2440,7 @@ shop_sign_surf = pygame.transform.scale_by(pygame.image.load(os.path.join(base_p
 relic_surf = pygame.transform.scale_by(pygame.image.load(os.path.join(base_path, "game_images", "relic.png")), 0.1)
 potion_surf = pygame.transform.scale_by(pygame.image.load(os.path.join(base_path, "game_images", "potion.png")), 0.1)
 coin_surf = pygame.transform.scale_by(pygame.image.load(os.path.join(base_path, "game_images", "coin.png")), 0.07)
-
+coin_surf_small = pygame.transform.scale_by(coin_surf, 0.2)
 
 class map_nodes(pygame.sprite.Sprite):
     def __init__(self, i, j):
@@ -2491,8 +2496,11 @@ class map_nodes(pygame.sprite.Sprite):
                     game_state.map_lock = True
                     
                     if self.node_type == "combat" or self.node_type == "elite":
-                        game_state.main_game_state = "combat"
-                        game_state.start_combat(self.node_type)
+                        # game_state.main_game_state = "combat"
+                        # game_state.start_combat(self.node_type)
+                        game_state.main_game_state = "shop"
+                        shop_make()
+                        game_state.open("shop")
                     else:
                         game_state.playing_floor += 1
                         pass
@@ -2557,6 +2565,7 @@ class extra_button_nodes (pygame.sprite.Sprite):
         if pygame.mouse.get_pressed() == (1,0,0):
             mouse_pos = pygame.mouse.get_pos()
             if self.rect.collidepoint(mouse_pos) and not game_state.mousepressed:
+                
                 if game_state.main_game_state == "map":
                     if self.type == "map":
                         if game_state.map_show:
@@ -2593,10 +2602,11 @@ class extra_button_nodes (pygame.sprite.Sprite):
                             combat_buttons.add(extra_button_nodes(0, ["continue"]))
                             button_reset()
                             self.kill()
-
+                
                 elif game_state.main_game_state == "reward":
-                    print ("yes")
+                    print ("yo")
                     if self.type == "continue":
+                        print("2")
                         game_state.playing_floor += 1
                         game_state.main_game_state = "map"
                         game_state.open("map")
@@ -2608,7 +2618,7 @@ class extra_button_nodes (pygame.sprite.Sprite):
                     pass
                 elif game_state.main_game_state == "chest":
                     pass     
-            if self.type == "reset":       
+            if self.type == "reset" and not game_state.draw_show and not game_state.draw_show:# and not game_state.reward_show:       
                 game_state.mousepressed = True
         else:
             if self.type == "reset":
@@ -2793,7 +2803,12 @@ class enemie_class(pygame.sprite.Sprite):
                             "gerald the least": gerald_the_least_surf,
                             "sparrow": sparrow_surf,
                             "Peppie": peppie_surf,
-                            "Kokkie": kokkie_surf
+                            "Kokkie": kokkie_surf,
+                            "grand sparrow": grand_sparrow_surf,
+                            "rolrat": rolrat_surf,
+                            "dark knight": dark_knight_surf,
+                            "ghost knight": ghost_knight_surf,
+                            "forgotten knight": forgotten_knight_surf
                             }
         #other
 
@@ -2963,33 +2978,26 @@ class draw_discard_class(pygame.sprite.Sprite):
         self.image = self.trans_surf
         self.rect = self.image.get_rect(bottomleft = cords)
 
-
     def button_press(self): 
         if pygame.mouse.get_pressed() == (1,0,0):           
             mouse_pos = pygame.mouse.get_pos()
             if self.rect.collidepoint(mouse_pos) and not game_state.mousepressed:
-                print ("1")
-                if game_state.combat_show:    
+                if game_state.combat_show:  
                     if self.type == "draw":
-                        print ("2")
                         game_state.open("draw")
                     if self.type == "discard":
-                        print ("3")
                         game_state.open("discard")
                 elif game_state.draw_show:
                     if self.type == "draw":
-                        print("yo")
                         game_state.open("combat")      
                 elif game_state.discard_show:
                     if self.type == "discard":
                         game_state.open("combat")
-            if len(self.group) == 2 and self.type == "draw":
-                game_state.mousepressed = False
-            else:
-                game_state.mousepressed = True
-            
+                
+                game_state.mousepressed = True  
         else:
             game_state.mousepressed = False
+
               
     def update(self):
         self.button_press()
@@ -3077,7 +3085,73 @@ class ui_class(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
 
+class shop_class(pygame.sprite.Sprite):
+    def __init__(self, i, type):
+        super().__init__()
+        self.type = type
+        self.price = 0
+        self.x = 300
+        self.y = 100
+        x = 0
+        y = 0
+        trans_surface = pygame.transform.smoothscale(battle_surf, (self.x,self.y))#.copy()
+        if type == "card":
+            y = 200
+            x = 200 + 300 * i
+            self.item = shop_cards[i]["item"]
+            self.price = shop_cards[i]["price"]
+            if self.item == "strike": surface = strike_surf
+            elif self.item == "block": surface = block_surf
+            else:
+                surface = blanc_card_surf
+            text = self.item
+            
+        elif type == "relic":
+            y = 500
+            x = 500
+            surface = relic_surf
+            self.item = shop_cards[i]["item"]
+            self.price = shop_cards[i]["price"]
+            text = self.item
+        elif type == "potion":
+            y = 800
+            x = 800
+            surface = potion_surf
+            self.item = shop_cards[i]["item"]
+            self.price = shop_cards[i]["price"]
+            text = self.item 
 
+        font = pygame.font.Font(None, 30)
+        text_surf = font.render(text, False, 'gray')
+        text_rect = text_surf.get_rect(midbottom = (surface.get_width()/2, surface.get_height() - 30))
+
+        
+
+
+
+
+        money_surf = trans_surface.copy()
+        coin_rect_small = coin_surf_small.get_rect(midleft = (0, money_surf.get_height()/2))
+        price_surf = font.render(f"{self.price}", False, "black")
+        price_rect = price_surf.get_rect(midleft = (coin_surf_small.get_width() + 10, money_surf.get_height()/2))
+
+        
+        money_surf.blit(coin_surf_small, coin_rect_small)
+        money_surf.blit(price_surf,price_rect)
+        money_rect = money_surf.get_rect(midbottom = (base_surface.get_width()/2, base_surface.get_height()))
+
+        rect = surface.get_rect(midtop = (max(surface.get_width()/2,"text window"), 0))
+        base_surface = pygame.transform.smoothscale(battle_surf, (max(surface.get_width(),"tbd"),surface.get_height()+ 50))
+        base_surface.blit(surface, )
+        base_surface.blit(text_surf, text_rect)
+        base_surface.blit(money_surf,money_rect)
+
+
+
+
+
+        self.image = base_surface
+        self.rect = self.image.get_rect(bottomleft = (x,y))
 
 stored = {0:{"card": 1},
           1:{"card": 1},
@@ -3182,6 +3256,7 @@ enemie_group = pygame.sprite.Group()
 energy_group = pygame.sprite.Group()
 draw_discard_group = pygame.sprite.Group()
 reward_card_group = pygame.sprite.Group()
+shop_group = pygame.sprite.Group()
 node_group = pygame.sprite.Group()
 for i in range (height):
     for j in range (width):
@@ -3190,7 +3265,7 @@ for i in range (height):
 combat_buttons = pygame.sprite.Group()
 map_buttons = pygame.sprite.Group()
 deck_buttons = pygame.sprite.Group()
-map_types = ["deck", "map", "combat","reward"]
+map_types = ["deck", "map", "combat"]
 group_types = {"deck":      (deck_buttons,      ["deck","map"]),
                "map":       (map_buttons,       ["deck","map",]),
                "combat":    (combat_buttons,    ["deck", "map",]),
@@ -3220,6 +3295,27 @@ def combat_reward():
                 reward_card_group.add(card_reward_class(i, type)) 
         else:
             reward_card_group.add(card_reward_class(i, type)) 
+    reward_card_group.add(extra_button_nodes(0, ["continue"]))
+    reward_card_group.add(extra_button_nodes(0, ["reset"]))
+
+def shop_make():
+    shop_group.empty()
+    shop(5,3,3)
+
+    for i in range (len(shop_cards)):
+        type = "card"
+        shop_group.add(shop_class(i, type)) 
+    for i in range (len(shop_relics)):
+        type = "relic"
+        shop_group.add(shop_class(i, type)) 
+    for i in range (len(shop_potions)):
+        type = "potion"
+        shop_group.add(shop_class(i, type)) 
+
+    reward_card_group.add(extra_button_nodes(0, ["continue"]))
+    reward_card_group.add(extra_button_nodes(0, ["reset"]))
+    
+    
 
 def player_group_update():
     print ("updated the player group")
@@ -3276,6 +3372,7 @@ running = True
 # ----------game----------
 run = 0
 while running:
+    print(game_state.main_game_state)
     mouse_pos = (pygame.mouse.get_pos())
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -3354,6 +3451,8 @@ while running:
     if game_state.shop_show:
         background("wood", (1920,1080))
         sign_show("shop")
+        shop_group.draw(screen)
+        shop_group.update()
         gold_show()
 
 
@@ -3383,6 +3482,11 @@ while running:
 
 
 #if pressed -> selected -> remove under self.x
+
+
+
+
+
 
 
 
